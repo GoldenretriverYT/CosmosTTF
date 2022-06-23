@@ -1,4 +1,4 @@
-﻿# CosmosTTF
+# CosmosTTF
 Fast TrueType Font rendering in Cosmos
 
 # How to use
