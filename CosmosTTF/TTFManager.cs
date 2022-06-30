@@ -58,12 +58,34 @@ namespace CosmosTTF {
         public static void DrawStringTTF(this Canvas cv, Pen pen, string text, string font, float px, Point point, float spacingMultiplier = 1f) {
             prevCanv = cv;
             float offX = 0;
+            float offY = 0;
 
             foreach (char c in text) {
+                if(c == '\n') {
+                    offY += px;
+                    continue;
+                }
+
                 GlyphResult g = RenderGlyphAsBitmap(font, c, pen.Color, px);
                 cv.DrawImageAlpha(g.bmp, new Point(point.X + (int)offX, point.Y + g.offY));
                 offX += g.offX;
             }
+        }
+
+        public static int GetTTFWidth(this string text, string font, float px) {
+            if (!fonts.TryGet(font, out Font f)) {
+                throw new Exception("Font is not registered");
+            }
+
+            float scale = f.ScaleInPixels(px);
+            int totalWidth = 0;
+
+            foreach(char c in text) {
+                f.GetCodepointHMetrics(c, out int advWidth, out int lsb);
+                totalWidth += advWidth;
+            }
+
+            return (int)(totalWidth * scale);
         }
 
         internal static void DebugUIPrint(string txt, int offY = 0) {

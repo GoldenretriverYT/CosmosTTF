@@ -776,7 +776,8 @@ namespace cs_ttf
 
                 m = n + 2 * numberOfContours;  // a loose bound on how many vertices we might need
                 //vertices = (stbtt_vertex*)Marshal.AllocHGlobal(m * sizeof(stbtt_vertex));
-                Marshal.Copy(new IntPtr(info->userdata), vertices, 0, sizeof(stbtt_vertex)*m);
+                vertices = (stbtt_vertex*)info->userdata;
+
                 if (vertices == null)
                     return 0;
 

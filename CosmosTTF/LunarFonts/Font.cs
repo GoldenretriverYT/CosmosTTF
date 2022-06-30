@@ -225,7 +225,7 @@ namespace LunarLabs.Fonts {
             return 0;
         }
 
-        private void GetGlyphHMetrics(int glyphIndex, out int advanceWidth, out int leftSideBearing) {
+        public void GetGlyphHMetrics(int glyphIndex, out int advanceWidth, out int leftSideBearing) {
             uint numOfLongHorMetrics = ReadU16(_hhea + 34);
             if (glyphIndex < numOfLongHorMetrics) {
                 advanceWidth = ReadS16((uint)(_hmtx + 4 * glyphIndex));
@@ -312,52 +312,35 @@ namespace LunarLabs.Fonts {
         }
 
         private GlyphBitmap GetGlyphBitmap(float scale_x, float scale_y, float shift_x, float shift_y, int glyph, out int xoff, out int yoff) {
-            //TTFManager.DebugUIPrint("GetGlyphBitmap - " + glyph + ": Log Point 1");
             var vertices = GetGlyphShape(glyph);
 
-            //TTFManager.DebugUIPrint("GetGlyphBitmap - " + glyph + ": Log Point 2");
             if (scale_x == 0)
                 scale_x = scale_y;
 
-            //TTFManager.DebugUIPrint("GetGlyphBitmap - " + glyph + ": Log Point 3");
             if (scale_y == 0) {
-                //TTFManager.DebugUIPrint("GetGlyphBitmap - " + glyph + ": Log Point 4");
                 if (scale_x == 0) {
-                    //TTFManager.DebugUIPrint("GetGlyphBitmap - " + glyph + ": Log Point 5");
                     throw new Exception("invalid scale");
                 }
 
-                //TTFManager.DebugUIPrint("GetGlyphBitmap - " + glyph + ": Log Point 6");
                 scale_y = scale_x;
             }
 
-            //TTFManager.DebugUIPrint("GetGlyphBitmap - " + glyph + ": Log Point 7");
             int ix0, iy0, ix1, iy1;
 
-            //TTFManager.DebugUIPrint("GetGlyphBitmap - " + glyph + ": Log Point 8");
             GetGlyphBitmapBox(glyph, scale_x, scale_y, shift_x, shift_y, out ix0, out iy0, out ix1, out iy1);
 
-            //TTFManager.DebugUIPrint("GetGlyphBitmap - " + glyph + ": Log Point 9");
             int w = (ix1 - ix0);
-            //TTFManager.DebugUIPrint("GetGlyphBitmap - " + glyph + ": Log Point 10");
             int h = (iy1 - iy0);
 
-            //TTFManager.DebugUIPrint("GetGlyphBitmap - " + glyph + ": Log Point 11");
             if (w <= 0 || h <= 0) {
-                //TTFManager.DebugUIPrint("GetGlyphBitmap - " + glyph + ": Log Point 12");
                 throw new Exception("invalid glyph size");
             }
 
             // now we get the size
-            //TTFManager.DebugUIPrint("GetGlyphBitmap - " + glyph + ": Log Point 13");
             var result = new GlyphBitmap(w, h);
-            //TTFManager.DebugUIPrint("GetGlyphBitmap - " + glyph + ": Log Point 14");
             xoff = ix0;
-            //TTFManager.DebugUIPrint("GetGlyphBitmap - " + glyph + ": Log Point 15");
             yoff = iy0;
-            //TTFManager.DebugUIPrint("GetGlyphBitmap - " + glyph + ": Log Point 16");
             Rasterize(result, 0.35f, vertices, scale_x, scale_y, shift_x, shift_y, ix0, iy0, true);
-            //TTFManager.DebugUIPrint("GetGlyphBitmap - " + glyph + ": Log Point 17");
             return result;
         }
 
