@@ -656,7 +656,7 @@ namespace cs_ttf {
             stbtt_int16 numberOfContours;
             stbtt_uint8* endPtsOfContours;
             stbtt_uint8* data = info->data;
-            stbtt_vertex* vertices = null;
+            stbtt_vertex* vertices = (stbtt_vertex*)IntPtr.Zero;
             int num_vertices = 0;
             int g = stbtt__GetGlyfOffset(info, glyph_index);
 
@@ -679,7 +679,7 @@ namespace cs_ttf {
 
                 m = n + 2 * numberOfContours;  // a loose bound on how many vertices we might need
                 //vertices = (stbtt_vertex*)Marshal.AllocHGlobal(m * sizeof(stbtt_vertex));
-                vertices = (stbtt_vertex*)STBTT_malloc(m * sizeof(stbtt_vertex), info->userdata);
+                vertices = (stbtt_vertex*)STBTT_malloc(m * sizeof(stbtt_vertex), (stbtt_vertex*)info->userdata);
 
                 if (vertices == null)
                     return 0;
@@ -800,8 +800,8 @@ namespace cs_ttf {
                 while (more != 0) {
                     stbtt_uint16 flags, gidx;
                     int comp_num_verts = 0, i;
-                    stbtt_vertex* comp_verts = null;
-                    stbtt_vertex* tmp = null;
+                    stbtt_vertex* comp_verts = (stbtt_vertex*)IntPtr.Zero;
+                    stbtt_vertex* tmp = (stbtt_vertex*)IntPtr.Zero;
 
                     float[] mtx = new float[] { 1, 0, 0, 1, 0, 0 };
                     float m, n;
@@ -854,7 +854,7 @@ namespace cs_ttf {
                             v->cy = (short)(n * (mtx[1] * x + mtx[3] * y + mtx[5]));
                         }
                         // Append vertices.
-                        tmp = (stbtt_vertex*)STBTT_malloc((num_vertices+comp_num_verts)*sizeof(stbtt_vertex), info->userdata);
+                        tmp = (stbtt_vertex*)STBTT_malloc((num_vertices+comp_num_verts)*sizeof(stbtt_vertex), (stbtt_vertex*)info->userdata);
                         if (tmp == null) {
                             return 0;
                         }
@@ -882,7 +882,7 @@ namespace cs_ttf {
             public float x = 0, y = 0;
             public stbtt_int32 min_x = 0, max_x = 0, min_y = 0, max_y = 0;
 
-            public stbtt_vertex* pvertices = null;
+            public stbtt_vertex* pvertices = (stbtt_vertex*)IntPtr.Zero;
             public int num_vertices = 0;
 
             public stbtt__csctx() {
@@ -1254,7 +1254,7 @@ namespace cs_ttf {
             stbtt__csctx count_ctx = STBTT__CSCTX_INIT(1);
             stbtt__csctx output_ctx = STBTT__CSCTX_INIT(0);
             if (stbtt__run_charstring(info, glyph_index, &count_ctx) != 0) {
-                *pvertices = (stbtt_vertex*)STBTT_malloc(count_ctx.num_vertices*sizeof(stbtt_vertex), info->userdata);
+                *pvertices = (stbtt_vertex*)STBTT_malloc(count_ctx.num_vertices*sizeof(stbtt_vertex), (stbtt_vertex*)info->userdata);
                 output_ctx.pvertices = *pvertices;
                 if (stbtt__run_charstring(info, glyph_index, &output_ctx) != 0) {
                     Debug.Assert(output_ctx.num_vertices == count_ctx.num_vertices);
@@ -1735,7 +1735,7 @@ namespace cs_ttf {
             } else {
                 if (hh->num_remaining_in_head_chunk == 0) {
                     int count = (size < 32 ? 2000 : size < 128 ? 800 : 100);
-                    stbtt__hheap_chunk* c = (stbtt__hheap_chunk*)STBTT_malloc((int)(sizeof(stbtt__hheap_chunk)+size * count), userdata);
+                    stbtt__hheap_chunk* c = (stbtt__hheap_chunk*)STBTT_malloc((int)(sizeof(stbtt__hheap_chunk)+size * count)+1, (stbtt__hheap_chunk*)userdata);
                     if (c == null)
                         return null;
                     c->next = hh->head;
@@ -1777,7 +1777,7 @@ namespace cs_ttf {
             stbtt__active_edge* z = (stbtt__active_edge*)stbtt__hheap_alloc(hh, sizeof(stbtt__active_edge), userdata);
             float dxdy = (e->x1 - e->x0) / (e->y1 - e->y0);
             Debug.Assert(z != null);
-            Debug.Assert(e->y0 <= start_point);
+            //Debug.Assert(e->y0 <= start_point);
             if (z == null) return z;
             z->fdx = dxdy;
             z->fdy = dxdy != 0.0f ? (1.0f / dxdy) : 0.0f;
@@ -2072,7 +2072,7 @@ namespace cs_ttf {
             float* scanline2;
 
             if (result->w > 64)
-                scanline = (float*)STBTT_malloc((result->w*2+1) * sizeof(float), userdata);
+                scanline = (float*)STBTT_malloc((result->w*2+1) * sizeof(float), (float*)userdata);
             else {
                 fixed (float* aPtr = &scanline_data[0]) {
                     scanline = aPtr;
@@ -2265,7 +2265,7 @@ namespace cs_ttf {
             for (i = 0; i < windings; ++i)
                 n += wcount[i];
 
-            e = (stbtt__edge*)STBTT_malloc(sizeof(stbtt__edge) * (n+1), userdata); // add an extra one as a sentinel
+            e = (stbtt__edge*)STBTT_malloc(sizeof(stbtt__edge) * (n+1), (stbtt__edge*)userdata); // add an extra one as a sentinel
             if (e == null) return;
             n = 0;
 
@@ -2384,7 +2384,7 @@ namespace cs_ttf {
             *num_contours = n;
             if (n == 0) return null;
 
-            *contour_lengths = (int*)STBTT_malloc(sizeof(int)*n, userdata);
+            *contour_lengths = (int*)STBTT_malloc(sizeof(int)*n, (int*)userdata);
 
             if (*contour_lengths == null) {
                 *num_contours = 0;
@@ -2395,7 +2395,7 @@ namespace cs_ttf {
             for (pass = 0; pass < 2; ++pass) {
                 float x = 0, y = 0;
                 if (pass == 1) {
-                    points = (stbtt__point*)STBTT_malloc(num_points * sizeof(stbtt__point), userdata);
+                    points = (stbtt__point*)STBTT_malloc(num_points * sizeof(stbtt__point), (stbtt__point*)userdata);
                     if (points == null) goto error;
                 }
                 num_points = 0;
@@ -2485,7 +2485,7 @@ namespace cs_ttf {
             if (yoff != null) *yoff = iy0;
 
             if (gbm.w != 0 && gbm.h != 0) {
-                gbm.pixels = (byte*)STBTT_malloc(gbm.w * gbm.h, info->userdata);
+                gbm.pixels = (byte*)STBTT_malloc(gbm.w * gbm.h, (byte*)info->userdata);
                 if (gbm.pixels != null) {
                     gbm.stride = gbm.w;
 
@@ -2748,9 +2748,9 @@ namespace cs_ttf {
             public void* nodes;
         }
 
-        public static void* STBTT_malloc(int x, void* u) {
-            void* ptr = Marshal.AllocHGlobal(x).ToPointer();
-            ptr = u;
+        public static void* STBTT_malloc<T>(int x, T* u) where T : unmanaged {
+            T* ptr = (T*)Marshal.AllocHGlobal(x).ToPointer();
+            if(u != null) *ptr = *u;
             return ptr;
         }
 
@@ -2759,9 +2759,9 @@ namespace cs_ttf {
         }
 
         public int stbtt_PackBegin(stbtt_pack_context* spc, byte* pixels, int pw, int ph, int stride_in_bytes, int padding, void* alloc_context) {
-            stbrp_context* context = (stbrp_context*)STBTT_malloc(sizeof(stbtt_pack_context), alloc_context);
+            stbrp_context* context = (stbrp_context*)STBTT_malloc(sizeof(stbtt_pack_context), (stbrp_context*)alloc_context);
             int num_nodes = pw - padding;
-            stbrp_node* nodes = (stbrp_node*)STBTT_malloc(sizeof(stbrp_node) * num_nodes, alloc_context);
+            stbrp_node* nodes = (stbrp_node*)STBTT_malloc(sizeof(stbrp_node) * num_nodes, (stbrp_node*)alloc_context);
 
             if (context == null || nodes == null) {
                 if (context != null) STBTT_free(alloc_context);
@@ -3132,7 +3132,7 @@ namespace cs_ttf {
             for (i = 0; i < num_ranges; ++i)
                 n += ranges[i].num_chars;
 
-            rects = (stbrp_rect*)STBTT_malloc(sizeof(stbrp_rect) * n, spc->user_allocator_context);
+            rects = (stbrp_rect*)STBTT_malloc(sizeof(stbrp_rect) * n, (stbrp_rect*)spc->user_allocator_context);
             if (rects == null)
                 return 0;
 

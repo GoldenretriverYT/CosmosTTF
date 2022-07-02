@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "CosmosTTF": {
+      "commandName": "Project",
+      "nativeDebugging": true
+    }
+  }
+}
