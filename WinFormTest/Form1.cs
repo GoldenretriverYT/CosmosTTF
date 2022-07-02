@@ -23,6 +23,7 @@ namespace WinFormTest {
 
             foreach (char c in "Hello World") {
                 GlyphResult g = TTFManager.RenderGlyphAsBitmap(font, c, Color.Black, 48);
+                if (g.bmp == null) continue;
                 bmpG.DrawImage(IntsToBitmap(g.bmp.rawData, (int)g.bmp.Width, (int)g.bmp.Height, out IntPtr _iptr), new Point((int)offX, 100 + g.offY));
                 offX += g.offX;
             }

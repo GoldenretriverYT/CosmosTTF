@@ -1,11 +1,13 @@
 ﻿using Cosmos.System.Graphics;
+using cs_ttf;
 using LunarLabs.Fonts;
 using System.Drawing;
+using System.Runtime.InteropServices;
 using Point = Cosmos.System.Graphics.Point;
 
 namespace CosmosTTF {
-    public static class TTFManager {
-        private static CustomDictString<Font> fonts = new();
+    public unsafe static class TTFManager {
+        private static CustomDictString<stbtt_fontinfo> fonts = new();
         private static CustomDictString<GlyphResult> glyphCache = new();
         private static List<string> glyphCacheKeys = new();
 
@@ -13,12 +15,17 @@ namespace CosmosTTF {
         private static Canvas prevCanv;
 
         public static void RegisterFont(string name, byte[] byteArray) {
-            fonts.Add(name, new Font(byteArray));
+            var fontInfo = new stbtt_fontinfo();
+
+            fixed(byte* ptr = byteArray) {
+                TTF.stbtt_InitFont(&fontInfo, ptr, TTF.stbtt_GetFontOffsetForIndex(ptr, 0));
+                fonts.Add(name, fontInfo);
+            }
         }
 
         public static GlyphResult RenderGlyphAsBitmap(string font, char glyph, Color color, float scalePx = 16) {
             var rgbOffset = ((color.R & 0xFF) << 16) + ((color.G & 0xFF) << 8) + color.B;
-            if (!fonts.TryGet(font, out Font f)) {
+            if (!fonts.TryGet(font, out stbtt_fontinfo f)) {
                 throw new Exception("Font is not registered");
             }
 
@@ -26,24 +33,28 @@ namespace CosmosTTF {
                 return cached;
             }
 
-            float scale = f.ScaleInPixels(scalePx);
-            var glyphRendered = f.RenderGlyph(glyph, scale);
-            var image = glyphRendered.Image;
+            float scale = TTF.stbtt_ScaleForPixelHeight(&f, scalePx);
+            int width, height, offX, offY;
+            var glyphRenderedRaw = TTF.stbtt_GetCodepointBitmap(&f, scale, scale, glyph, &width, &height, &offX, &offY);
+            byte[] image = new byte[width*height];
 
+            if (glyphRenderedRaw == null) return new GlyphResult();
+
+            Marshal.Copy((IntPtr)glyphRenderedRaw, image, 0, width * height);
             /* Todo: Maybe use Cosmos Bitmap directly in LunarFonts.Font? */
-            var bmp = new Bitmap((uint)image.Width, (uint)image.Height, ColorDepth.ColorDepth32);
+            var bmp = new Bitmap((uint)width, (uint)height, ColorDepth.ColorDepth32);
 
-            for (int j = 0; j < image.Height; j++) {
-                for (int i = 0; i < image.Width; i++) {
-                    byte alpha = image.Pixels[i + j * image.Width];
-                    bmp.rawData[i + j * image.Width] = ((int)alpha << 24) + rgbOffset;
+            for (int j = 0; j < height; j++) {
+                for (int i = 0; i < width; i++) {
+                    byte alpha = image[i + j * width];
+                    bmp.rawData[i + j * width] = ((int)alpha << 24) + rgbOffset;
                 }
             }
 
-            glyphCache[font + glyph + scalePx] = new(bmp, glyphRendered.xAdvance, glyphRendered.yOfs);
+            glyphCache[font + glyph + scalePx] = new(bmp, offX, offY);
             glyphCacheKeys.Add(font + glyph + scalePx);
             if (glyphCache.Count > GlyphCacheSize) glyphCache.Remove(glyphCacheKeys[0]); glyphCacheKeys.RemoveAt(0);
-            return new(bmp, glyphRendered.xAdvance, glyphRendered.yOfs);
+            return new(bmp, offX, offY);
         }
 
         /// <summary>
@@ -73,15 +84,16 @@ namespace CosmosTTF {
         }
 
         public static int GetTTFWidth(this string text, string font, float px) {
-            if (!fonts.TryGet(font, out Font f)) {
+            if (!fonts.TryGet(font, out stbtt_fontinfo f)) {
                 throw new Exception("Font is not registered");
             }
 
-            float scale = f.ScaleInPixels(px);
+            float scale = TTF.stbtt_ScaleForPixelHeight(&f, px);
             int totalWidth = 0;
 
             foreach(char c in text) {
-                f.GetCodepointHMetrics(c, out int advWidth, out int lsb);
+                int advWidth = 0, lsb = 0;
+                TTF.stbtt_GetCodepointHMetrics(&f, c, &advWidth, &lsb);
                 totalWidth += advWidth;
             }
 
