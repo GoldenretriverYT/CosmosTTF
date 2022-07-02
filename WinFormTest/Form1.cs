@@ -8,10 +8,10 @@ namespace WinFormTest {
         }
 
         private void Form1_Load(object sender, EventArgs e) {
-            TTFManager.RegisterFont("arial", File.ReadAllBytes("arial.ttf"));
+            //TTFManager.RegisterFont("arial", File.ReadAllBytes("arial.ttf"));
             TTFManager.RegisterFont("inconsolata", File.ReadAllBytes("inconsolata.ttf"));
 
-            TryFont(pictureBox1, "arial");
+            //TryFont(pictureBox1, "arial");
             TryFont(pictureBox2, "inconsolata");
         }
 

@@ -1,11 +1,12 @@
 ﻿using Cosmos.System.Graphics;
-using LunarLabs.Fonts;
+using SharpFont;
 using System.Drawing;
+using System.Runtime.InteropServices;
 using Point = Cosmos.System.Graphics.Point;
 
 namespace CosmosTTF {
     public static class TTFManager {
-        private static CustomDictString<Font> fonts = new();
+        private static CustomDictString<FontFace> fonts = new();
         private static CustomDictString<GlyphResult> glyphCache = new();
         private static List<string> glyphCacheKeys = new();
 
@@ -13,12 +14,12 @@ namespace CosmosTTF {
         private static Canvas prevCanv;
 
         public static void RegisterFont(string name, byte[] byteArray) {
-            fonts.Add(name, new Font(byteArray));
+            fonts.Add(name, new FontFace(new MemoryStream(byteArray)));
         }
 
         public static GlyphResult RenderGlyphAsBitmap(string font, char glyph, Color color, float scalePx = 16) {
             var rgbOffset = ((color.R & 0xFF) << 16) + ((color.G & 0xFF) << 8) + color.B;
-            if (!fonts.TryGet(font, out Font f)) {
+            if (!fonts.TryGet(font, out FontFace f)) {
                 throw new Exception("Font is not registered");
             }
 
@@ -26,24 +27,24 @@ namespace CosmosTTF {
                 return cached;
             }
 
-            float scale = f.ScaleInPixels(scalePx);
-            var glyphRendered = f.RenderGlyph(glyph, scale);
-            var image = glyphRendered.Image;
+            var processedGlyph = f.GetGlyph(new CodePoint(glyph), scalePx);
+            Surface surface = new Surface() { Width = (int)processedGlyph.RenderWidth, Height = (int)processedGlyph.RenderHeight };
+            processedGlyph.RenderTo(surface);
 
             /* Todo: Maybe use Cosmos Bitmap directly in LunarFonts.Font? */
-            var bmp = new Bitmap((uint)image.Width, (uint)image.Height, ColorDepth.ColorDepth32);
+            var bmp = new Bitmap((uint)surface.Width, (uint)surface.Height, ColorDepth.ColorDepth32);
 
-            for (int j = 0; j < image.Height; j++) {
-                for (int i = 0; i < image.Width; i++) {
-                    byte alpha = image.Pixels[i + j * image.Width];
-                    bmp.rawData[i + j * image.Width] = ((int)alpha << 24) + rgbOffset;
+            for (int j = 0; j < surface.Height; j++) {
+                for (int i = 0; i < surface.Width; i++) {
+                    byte alpha = Marshal.ReadByte(IntPtr.Add(surface.Bits, (i + j * surface.Width)));
+                    bmp.rawData[i + j * surface.Width] = ((int)alpha << 24) + rgbOffset;
                 }
             }
 
-            glyphCache[font + glyph + scalePx] = new(bmp, glyphRendered.xAdvance, glyphRendered.yOfs);
+            glyphCache[font + glyph + scalePx] = new(bmp, processedGlyph.RenderWidth, 0);
             glyphCacheKeys.Add(font + glyph + scalePx);
             if (glyphCache.Count > GlyphCacheSize) glyphCache.Remove(glyphCacheKeys[0]); glyphCacheKeys.RemoveAt(0);
-            return new(bmp, glyphRendered.xAdvance, glyphRendered.yOfs);
+            return new(bmp, processedGlyph.RenderWidth, 0);
         }
 
         /// <summary>
@@ -73,19 +74,18 @@ namespace CosmosTTF {
         }
 
         public static int GetTTFWidth(this string text, string font, float px) {
-            if (!fonts.TryGet(font, out Font f)) {
+            if (!fonts.TryGet(font, out FontFace f)) {
                 throw new Exception("Font is not registered");
             }
 
-            float scale = f.ScaleInPixels(px);
             int totalWidth = 0;
 
             foreach(char c in text) {
-                f.GetCodepointHMetrics(c, out int advWidth, out int lsb);
+                var advWidth = f.GetGlyph(c, px).RenderWidth;
                 totalWidth += advWidth;
             }
 
-            return (int)(totalWidth * scale);
+            return (int)(totalWidth);
         }
 
         internal static void DebugUIPrint(string txt, int offY = 0) {
