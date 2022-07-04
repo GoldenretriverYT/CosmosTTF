@@ -1766,11 +1766,14 @@ namespace cs_ttf {
         }
 
         public struct stbtt__active_edge {
-            public stbtt__active_edge* next;
-            public float fx, fdx, fdy;
-            public float direction;
-            public float sy;
-            public float ey;
+            public stbtt__active_edge* next = null;
+            public float fx = 0, fdx = 0, fdy = 0;
+            public float direction = 0;
+            public float sy = 0;
+            public float ey = 0;
+
+            public stbtt__active_edge() {
+            }
         }
 
         static stbtt__active_edge* stbtt__new_active(stbtt__hheap* hh, stbtt__edge* e, int off_x, float start_point, void* userdata) {
