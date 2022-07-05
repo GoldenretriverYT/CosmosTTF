@@ -22,7 +22,7 @@ namespace CosmosTTF {
                 throw new Exception("Font is not registered");
             }
 
-            if (glyphCache.TryGet(font + glyph + scalePx, out GlyphResult cached)) {
+            if (glyphCache.TryGet(font + glyph + scalePx + rgbOffset.ToString(), out GlyphResult cached)) {
                 return cached;
             }
 
@@ -40,8 +40,8 @@ namespace CosmosTTF {
                 }
             }
 
-            glyphCache[font + glyph + scalePx] = new(bmp, glyphRendered.xAdvance, glyphRendered.yOfs);
-            glyphCacheKeys.Add(font + glyph + scalePx);
+            glyphCache[font + glyph + scalePx + rgbOffset.ToString()] = new(bmp, glyphRendered.xAdvance, glyphRendered.yOfs);
+            glyphCacheKeys.Add(font + glyph + scalePx + rgbOffset.ToString());
             if (glyphCache.Count > GlyphCacheSize) glyphCache.Remove(glyphCacheKeys[0]); glyphCacheKeys.RemoveAt(0);
             return new(bmp, glyphRendered.xAdvance, glyphRendered.yOfs);
         }
