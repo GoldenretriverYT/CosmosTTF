@@ -16,6 +16,15 @@ namespace CosmosTTF {
             fonts.Add(name, new Font(byteArray));
         }
 
+        /// <summary>
+        /// Render a glyph
+        /// </summary>
+        /// <param name="font">Registered font name</param>
+        /// <param name="glyph">The character to render</param>
+        /// <param name="color">The color to make the text (ignores alpha)</param>
+        /// <param name="scalePx">The scale in pixels</param>
+        /// <returns></returns>
+        /// <exception cref="Exception"></exception>
         public static GlyphResult RenderGlyphAsBitmap(string font, char glyph, Color color, float scalePx = 16) {
             var rgbOffset = ((color.R & 0xFF) << 16) + ((color.G & 0xFF) << 8) + color.B;
             if (!fonts.TryGet(font, out Font f)) {
@@ -47,7 +56,7 @@ namespace CosmosTTF {
         }
 
         /// <summary>
-        /// Draws a string using the registered TTF font provided under the font parameter. Do NOT forget to run Canvas.Display, or else it, well, wont display!
+        /// Draws a string using the registered TTF font provided under the font parameter. Alpha in pen color will be ignored. Do NOT forget to run Canvas.Display, or else it, well, wont display!
         /// </summary>
         /// <param name="cv"></param>
         /// <param name="pen"></param>
