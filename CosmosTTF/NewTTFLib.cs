@@ -2637,7 +2637,7 @@ namespace cs_ttf {
         }
 
         public static int STBTT_iceil(float x) {
-            return (int)Math.Floor((double)x);
+            return (int)Math.Ceiling((double)x);
         }
 
         public static float STBTT_sqrt(float x) {

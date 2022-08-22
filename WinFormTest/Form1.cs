@@ -8,11 +8,7 @@ namespace WinFormTest {
         }
 
         private void Form1_Load(object sender, EventArgs e) {
-            TTFManager.RegisterFont("arial", File.ReadAllBytes("arial.ttf"));
-            TTFManager.RegisterFont("inconsolata", File.ReadAllBytes("inconsolata.ttf"));
-
-            TryFont(pictureBox1, "arial");
-            TryFont(pictureBox2, "inconsolata");
+            
         }
 
         public void TryFont(PictureBox pb, string font) {
@@ -35,6 +31,15 @@ namespace WinFormTest {
             bitmapData = Marshal.AllocHGlobal(width * height * 4);
             Marshal.Copy(pixels, 0, bitmapData, pixels.Length);
             return new Bitmap(width, height, 4 * width, System.Drawing.Imaging.PixelFormat.Format32bppArgb, bitmapData);
+        }
+
+        private void button1_Click(object sender, EventArgs e)
+        {
+            TTFManager.RegisterFont("arial", File.ReadAllBytes("arial.ttf"));
+            TTFManager.RegisterFont("inconsolata", File.ReadAllBytes("inconsolata.ttf"));
+
+            TryFont(pictureBox1, "arial");
+            TryFont(pictureBox2, "inconsolata");
         }
     }
 }
