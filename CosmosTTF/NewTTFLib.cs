@@ -114,7 +114,7 @@ namespace cs_ttf {
         }
 
         static void stbtt__buf_seek(stbtt__buf* b, int o) {
-            Debug.Assert(!(o > b->size || o < 0));
+            CustomAssert(!(o > b->size || o < 0));
             b->cursor = (o > b->size || o < 0) ? b->size : o;
         }
 
@@ -125,7 +125,7 @@ namespace cs_ttf {
         static UInt32 stbtt__buf_get(stbtt__buf* b, int n) {
             UInt32 v = 0;
             int i;
-            Debug.Assert(n >= 1 && n <= 4);
+            CustomAssert(n >= 1 && n <= 4);
             for (i = 0; i < n; i++)
                 v = (v << 8) | stbtt__buf_get8(b);
             return v;
@@ -162,7 +162,7 @@ namespace cs_ttf {
             count = (int)stbtt__buf_get16(b);
             if (count != 0) {
                 offsize = stbtt__buf_get8(b);
-                Debug.Assert(offsize >= 1 && offsize <= 4);
+                CustomAssert(offsize >= 1 && offsize <= 4);
                 stbtt__buf_skip(b, offsize * count);
                 stbtt__buf_skip(b, (int)(stbtt__buf_get(b, offsize) - 1));
             }
@@ -176,13 +176,18 @@ namespace cs_ttf {
             else if (b0 >= 251 && b0 <= 254) return (uint)(-(b0 - 251) * 256 - stbtt__buf_get8(b) - 108);
             else if (b0 == 28) return stbtt__buf_get16(b);
             else if (b0 == 29) return stbtt__buf_get32(b);
-            Debug.Assert(false);
+            CustomAssert(false);
             return 0;
+        }
+
+        static void CustomAssert(bool cond)
+        {
+            if (!cond) throw new Exception();
         }
 
         static void stbtt__cff_skip_operand(stbtt__buf* b) {
             int v, b0 = stbtt__buf_peek8(b);
-            Debug.Assert(b0 >= 28);
+            CustomAssert(b0 >= 28);
             if (b0 == 30) {
                 stbtt__buf_skip(b, 1);
                 while (b->cursor < b->size) {
@@ -236,8 +241,8 @@ namespace cs_ttf {
             stbtt__buf_seek(&b, 0);
             count = (int)stbtt__buf_get16(&b);
             offsize = stbtt__buf_get8(&b);
-            Debug.Assert(i >= 0 && i < count);
-            Debug.Assert(offsize >= 1 && offsize <= 4);
+            CustomAssert(i >= 0 && i < count);
+            CustomAssert(offsize >= 1 && offsize <= 4);
             stbtt__buf_skip(&b, i * offsize);
             start = (int)stbtt__buf_get(&b, offsize);
             end = (int)stbtt__buf_get(&b, offsize);
@@ -499,7 +504,7 @@ namespace cs_ttf {
                     return ttUSHORT(data + index_map + 10 + (unicode_codepoint - first) * 2);
                 return 0;
             } else if (format == 2) {
-                Debug.Assert(false); // @TODO: high-byte mapping for japanese/chinese/korean
+                CustomAssert(false); // @TODO: high-byte mapping for japanese/chinese/korean
                 return 0;
             } else if (format == 4) { // standard mapping for windows fonts: binary search collection of ranges
                 stbtt_uint16 segcount = (ushort)(ttUSHORT(data + index_map + 6) >> 1);
@@ -570,7 +575,7 @@ namespace cs_ttf {
                 return 0; // not found
             }
             // @TODO
-            Debug.Assert(false);
+            CustomAssert(false);
             return 0;
         }
 
@@ -589,7 +594,7 @@ namespace cs_ttf {
         static int stbtt__GetGlyfOffset(stbtt_fontinfo* info, int glyph_index) {
             int g1, g2;
 
-            Debug.Assert(info->cff.size == 0);
+            CustomAssert(info->cff.size == 0);
 
             if (glyph_index >= info->numGlyphs) return -1; // glyph index out of range
             if (info->indexToLocFormat >= 2) return -1; // unknown index->glyph map format
@@ -819,7 +824,7 @@ namespace cs_ttf {
                         }
                     } else {
                         // @TODO handle matching point
-                        Debug.Assert(false);
+                        CustomAssert(false);
                     }
                     if ((flags & (1 << 3)) != 0) { // WE_HAVE_A_SCALE
                         mtx[0] = mtx[3] = ttSHORT(comp) / 16384.0f; comp += 2;
@@ -1257,7 +1262,7 @@ namespace cs_ttf {
                 *pvertices = (stbtt_vertex*)STBTT_malloc(count_ctx.num_vertices*sizeof(stbtt_vertex), (stbtt_vertex*)info->userdata);
                 output_ctx.pvertices = *pvertices;
                 if (stbtt__run_charstring(info, glyph_index, &output_ctx) != 0) {
-                    Debug.Assert(output_ctx.num_vertices == count_ctx.num_vertices);
+                    CustomAssert(output_ctx.num_vertices == count_ctx.num_vertices);
                     return output_ctx.num_vertices;
                 }
             }
@@ -1779,8 +1784,8 @@ namespace cs_ttf {
         static stbtt__active_edge* stbtt__new_active(stbtt__hheap* hh, stbtt__edge* e, int off_x, float start_point, void* userdata) {
             stbtt__active_edge* z = (stbtt__active_edge*)stbtt__hheap_alloc(hh, sizeof(stbtt__active_edge), userdata);
             float dxdy = (e->x1 - e->x0) / (e->y1 - e->y0);
-            Debug.Assert(z != null);
-            //Debug.Assert(e->y0 <= start_point);
+            CustomAssert(z != null);
+            //CustomAssert(e->y0 <= start_point);
             if (z == null) return z;
             z->fdx = dxdy;
             z->fdy = dxdy != 0.0f ? (1.0f / dxdy) : 0.0f;
@@ -1795,8 +1800,8 @@ namespace cs_ttf {
 
         static void stbtt__handle_clipped_edge(float* scanline, int x, stbtt__active_edge* e, float x0, float y0, float x1, float y1) {
             if (y0 == y1) return;
-            Debug.Assert(y0 < y1);
-            Debug.Assert(e->sy <= e->ey);
+            CustomAssert(y0 < y1);
+            CustomAssert(e->sy <= e->ey);
             if (y0 > e->ey) return;
             if (y1 < e->sy) return;
             if (y0 < e->sy) {
@@ -1809,29 +1814,29 @@ namespace cs_ttf {
             }
 
             if (x0 == x)
-                Debug.Assert(x1 <= x + 1);
+                CustomAssert(x1 <= x + 1);
             else if (x0 == x + 1)
-                Debug.Assert(x1 >= x);
+                CustomAssert(x1 >= x);
             else if (x0 <= x)
-                Debug.Assert(x1 <= x);
+                CustomAssert(x1 <= x);
             else if (x0 >= x + 1)
-                Debug.Assert(x1 >= x + 1);
+                CustomAssert(x1 >= x + 1);
             else
-                Debug.Assert(x1 >= x && x1 <= x + 1);
+                CustomAssert(x1 >= x && x1 <= x + 1);
 
             if (x0 <= x && x1 <= x)
                 scanline[x] += e->direction * (y1 - y0);
             else if (x0 >= x + 1 && x1 >= x + 1)
                 ;
             else {
-                Debug.Assert(x0 >= x && x0 <= x + 1 && x1 >= x && x1 <= x + 1);
+                CustomAssert(x0 >= x && x0 <= x + 1 && x1 >= x && x1 <= x + 1);
                 scanline[x] += e->direction * (y1 - y0) * (1 - ((x0 - x) + (x1 - x)) / 2); // coverage = 1 - average x position
             }
         }
 
         static float stbtt__sized_trapezoid_area(float height, float top_width, float bottom_width) {
-            Debug.Assert(top_width >= 0);
-            Debug.Assert(bottom_width >= 0);
+            CustomAssert(top_width >= 0);
+            CustomAssert(bottom_width >= 0);
             return (top_width + bottom_width) / 2.0f * height;
         }
 
@@ -1851,7 +1856,7 @@ namespace cs_ttf {
                 // brute force every pixel
 
                 // compute intersection points with top & bottom
-                Debug.Assert(e->ey >= y_top);
+                CustomAssert(e->ey >= y_top);
 
                 if (e->fdx == 0) {
                     float x0 = e->fx;
@@ -1870,7 +1875,7 @@ namespace cs_ttf {
                     float x_top, x_bottom;
                     float sy0, sy1;
                     float dy = e->fdy;
-                    Debug.Assert(e->sy <= y_bottom && e->ey >= y_top);
+                    CustomAssert(e->sy <= y_bottom && e->ey >= y_top);
 
                     // compute endpoints of line segment clipped to this scanline (if the
                     // line segment starts on this scanline. x0 is the intersection of the
@@ -1898,7 +1903,7 @@ namespace cs_ttf {
                             // simple case, only spans one pixel
                             int x = (int)x_top;
                             height = (sy1 - sy0) * e->direction;
-                            Debug.Assert(x >= 0 && x < len);
+                            CustomAssert(x >= 0 && x < len);
                             scanline[x] += stbtt__position_trapezoid_area(height, x_top, x + 1.0f, x_bottom, x + 1.0f);
                             scanline_fill[x] += height; // everything right of this pixel is filled
                         } else {
@@ -1922,8 +1927,8 @@ namespace cs_ttf {
                                 x0 = xb;
                                 xb = t;
                             }
-                            Debug.Assert(dy >= 0);
-                            Debug.Assert(dx >= 0);
+                            CustomAssert(dy >= 0);
+                            CustomAssert(dx >= 0);
 
                             x1 = (int)x_top;
                             x2 = (int)x_bottom;
@@ -1987,8 +1992,8 @@ namespace cs_ttf {
                                 scanline[x] += area + step / 2; // area of trapezoid is 1*step/2
                                 area += step;
                             }
-                            Debug.Assert(STBTT_fabs(area) <= 1.01f); // accumulated error from area += step unless we round step down
-                            Debug.Assert(sy1 > y_final - 0.01f);
+                            CustomAssert(STBTT_fabs(area) <= 1.01f); // accumulated error from area += step unless we round step down
+                            CustomAssert(sy1 > y_final - 0.01f);
 
                             // area covered in the last pixel is the rectangle from all the pixels to the left,
                             // plus the trapezoid filled by the line segment in this pixel all the way to the right edge
@@ -2103,7 +2108,7 @@ namespace cs_ttf {
                     stbtt__active_edge* z = *step;
                     if (z->ey <= scan_y_top) {
                         *step = z->next; // delete from list
-                        Debug.Assert(z->direction != 0);
+                        CustomAssert(z->direction != 0);
                         z->direction = 0;
                         stbtt__hheap_free(&hh, z);
                     } else {
@@ -2122,7 +2127,7 @@ namespace cs_ttf {
                                     z->ey = scan_y_top;
                                 }
                             }
-                            Debug.Assert(z->ey >= scan_y_top); // if we get really unlucky a tiny bit of an edge can be out of bounds
+                            CustomAssert(z->ey >= scan_y_top); // if we get really unlucky a tiny bit of an edge can be out of bounds
                                                                // insert at front
                             z->next = active;
                             active = z;
@@ -2597,8 +2602,8 @@ namespace cs_ttf {
                 }
                 if (y + gh + 1 >= ph) // check if it fits vertically AFTER potentially moving to next row
                     return -i;
-                Debug.Assert(x + gw < pw);
-                Debug.Assert(y + gh < ph);
+                CustomAssert(x + gw < pw);
+                CustomAssert(y + gh < ph);
                 stbtt_MakeGlyphBitmap(&f, pixels + x + y * pw, gw, gh, pw, scale, scale, g);
                 chardata[i].x0 = (ushort)(stbtt_int16)x;
                 chardata[i].y0 = (ushort)(stbtt_int16)y;
@@ -2801,8 +2806,8 @@ namespace cs_ttf {
         static int STBTT__OVER_MASK = STBTT_MAX_OVERSAMPLE - 1;
 
         public static void stbtt_PackSetOversampling(stbtt_pack_context* spc, uint h_oversample, uint v_oversample) {
-            Debug.Assert(h_oversample <= STBTT_MAX_OVERSAMPLE);
-            Debug.Assert(v_oversample <= STBTT_MAX_OVERSAMPLE);
+            CustomAssert(h_oversample <= STBTT_MAX_OVERSAMPLE);
+            CustomAssert(v_oversample <= STBTT_MAX_OVERSAMPLE);
             if (h_oversample <= STBTT_MAX_OVERSAMPLE)
                 spc->h_oversample = h_oversample;
             if (v_oversample <= STBTT_MAX_OVERSAMPLE)
@@ -2864,7 +2869,7 @@ namespace cs_ttf {
                 }
 
                 for (; i < w; ++i) {
-                    Debug.Assert(pixels[i] == 0);
+                    CustomAssert(pixels[i] == 0);
                     total -= buffer[i & STBTT__OVER_MASK];
                     pixels[i] = (byte) (total / kernel_width);
                 }
@@ -2926,7 +2931,7 @@ namespace cs_ttf {
                 }
 
                 for (; i < w; ++i) {
-                    Debug.Assert(pixels[i] == 0);
+                    CustomAssert(pixels[i] == 0);
                     total -= buffer[i & STBTT__OVER_MASK];
                     pixels[i] = (byte) (total / kernel_width);
                 }
@@ -3374,9 +3379,9 @@ namespace cs_ttf {
                 r[1] = s - u * (m + n);
                 r[2] = s - u * (m - n);
 
-                Debug.Assert( STBTT_fabs(((r[0]+a)*r[0]+b)*r[0]+c) < 0.05f);  // these asserts may not be safe at all scales, though they're in bezier t parameter units so maybe?
-                Debug.Assert( STBTT_fabs(((r[1]+a)*r[1]+b)*r[1]+c) < 0.05f);
-                Debug.Assert( STBTT_fabs(((r[2]+a)*r[2]+b)*r[2]+c) < 0.05f);
+                CustomAssert( STBTT_fabs(((r[0]+a)*r[0]+b)*r[0]+c) < 0.05f);  // these asserts may not be safe at all scales, though they're in bezier t parameter units so maybe?
+                CustomAssert( STBTT_fabs(((r[1]+a)*r[1]+b)*r[1]+c) < 0.05f);
+                CustomAssert( STBTT_fabs(((r[2]+a)*r[2]+b)*r[2]+c) < 0.05f);
                 return 3;
             }
         }
