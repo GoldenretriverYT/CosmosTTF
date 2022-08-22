@@ -1238,10 +1238,11 @@ namespace cs_ttf {
 
                         // push immediate
                         if (b0 == 255) {
-                            f = (float)(stbtt_int32)stbtt__buf_get32(&b) / 0x10000;
+                            f = ((Int32)stbtt__buf_get32(&b) / 0x10000);
                         } else {
                             stbtt__buf_skip(&b, -1);
-                            f = (float)(stbtt_int16)stbtt__cff_int(&b);
+                            int temp = (int)stbtt__cff_int(&b);
+                            f = temp;
                         }
                         if (sp >= 48) return STBTT__CSERR("push stack overflow");
                         s[sp++] = f;
