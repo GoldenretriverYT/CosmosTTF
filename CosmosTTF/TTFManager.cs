@@ -41,10 +41,10 @@ namespace CosmosTTF {
                 }
             }
 
-            glyphCache[font + glyph + scalePx] = new(bmp, processedGlyph.RenderWidth, 0);
+            glyphCache[font + glyph + scalePx] = new(bmp, (int)processedGlyph.HorizontalMetrics.Advance, 0, (int)processedGlyph.Width, (int)processedGlyph.Height, processedGlyph.RenderWidth, processedGlyph.RenderHeight);
             glyphCacheKeys.Add(font + glyph + scalePx);
             if (glyphCache.Count > GlyphCacheSize) glyphCache.Remove(glyphCacheKeys[0]); glyphCacheKeys.RemoveAt(0);
-            return new(bmp, processedGlyph.RenderWidth, 0);
+            return new(bmp, (int)processedGlyph.Width, 0, (int)processedGlyph.HorizontalMetrics.Advance, (int)processedGlyph.Height, processedGlyph.RenderWidth, processedGlyph.RenderHeight);
         }
 
         /// <summary>
@@ -97,13 +97,21 @@ namespace CosmosTTF {
 
     public struct GlyphResult {
         public Bitmap bmp;
-        public int offY = 0;
-        public int offX = 0;
+        public int offY;
+        public int offX;
+        public int w;
+        public int h;
+        public int rW;
+        public int rH;
 
-        public GlyphResult(Bitmap bmp, int offX, int offY) {
+        public GlyphResult(Bitmap bmp, int offX, int offY, int w, int h, int rW, int rH) {
             this.bmp = bmp;
             this.offX = offX;
             this.offY = offY;
+            this.w = w;
+            this.h = h;
+            this.rW = rW;
+            this.rH = rH;
         }
     }
 }
