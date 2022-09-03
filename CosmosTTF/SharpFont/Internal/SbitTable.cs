@@ -4,9 +4,12 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace SharpFont {
-    class SbitTable {
-        public unsafe static SbitTable Read (DataReader reader, TableRecord[] tables) {
+namespace SharpFont
+{
+    class SbitTable
+    {
+        public unsafe static SbitTable Read(DataReader reader, TableRecord[] tables)
+        {
             if (!SfntTables.SeekToTable(reader, tables, FourCC.Eblc))
                 return null;
 
@@ -20,7 +23,8 @@ namespace SharpFont {
                 throw new InvalidFontException("Too many bitmap strikes in font.");
 
             var sizeTableHeaders = stackalloc BitmapSizeTable[count];
-            for (int i = 0; i < count; i++) {
+            for (int i = 0; i < count; i++)
+            {
                 sizeTableHeaders[i].SubTableOffset = reader.ReadUInt32BE();
                 sizeTableHeaders[i].SubTableSize = reader.ReadUInt32BE();
                 sizeTableHeaders[i].SubTableCount = reader.ReadUInt32BE();
@@ -36,9 +40,11 @@ namespace SharpFont {
 
             // read index subtables
             var indexSubTables = stackalloc IndexSubTable[count];
-            for (int i = 0; i < count; i++) {
+            for (int i = 0; i < count; i++)
+            {
                 reader.Seek(baseOffset + sizeTableHeaders[i].SubTableOffset);
-                indexSubTables[i] = new IndexSubTable {
+                indexSubTables[i] = new IndexSubTable
+                {
                     FirstGlyph = reader.ReadUInt16BE(),
                     LastGlyph = reader.ReadUInt16BE(),
                     Offset = reader.ReadUInt32BE()
@@ -46,7 +52,8 @@ namespace SharpFont {
             }
 
             // read the actual data for each strike table
-            for (int i = 0; i < count; i++) {
+            for (int i = 0; i < count; i++)
+            {
                 // read the subtable header
                 reader.Seek(baseOffset + sizeTableHeaders[i].SubTableOffset + indexSubTables[i].Offset);
                 var indexFormat = reader.ReadUInt16BE();
@@ -59,7 +66,8 @@ namespace SharpFont {
             return null;
         }
 
-        struct BitmapSizeTable {
+        struct BitmapSizeTable
+        {
             public uint SubTableOffset;
             public uint SubTableSize;
             public uint SubTableCount;
@@ -69,14 +77,16 @@ namespace SharpFont {
             public BitmapSizeFlags Flags;
         }
 
-        struct IndexSubTable {
+        struct IndexSubTable
+        {
             public ushort FirstGlyph;
             public ushort LastGlyph;
             public uint Offset;
         }
 
         [Flags]
-        enum BitmapSizeFlags {
+        enum BitmapSizeFlags
+        {
             None,
             Horizontal,
             Vertical

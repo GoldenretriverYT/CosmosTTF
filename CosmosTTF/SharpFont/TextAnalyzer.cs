@@ -3,15 +3,18 @@ using System.Collections.Generic;
 using System.Numerics;
 using System.Runtime.InteropServices;
 
-namespace SharpFont {
-    public interface IGlyphAtlas {
+namespace SharpFont
+{
+    public interface IGlyphAtlas
+    {
         int Width { get; }
         int Height { get; }
 
-        void Insert (int page, int x, int y, int width, int height, IntPtr data);
+        void Insert(int page, int x, int y, int width, int height, IntPtr data);
     }
 
-    public unsafe sealed class TextAnalyzer {
+    public unsafe sealed class TextAnalyzer
+    {
         [ThreadStatic]
         static MemoryBuffer memoryBuffer;
 
@@ -21,12 +24,14 @@ namespace SharpFont {
         ResizableArray<BufferEntry> buffer;
         int currentPage;
 
-        public int Dpi {
+        public int Dpi
+        {
             get;
             set;
         }
 
-        public TextAnalyzer (IGlyphAtlas atlas) {
+        public TextAnalyzer(IGlyphAtlas atlas)
+        {
             this.atlas = atlas;
             Dpi = 96;
             cache = new Dictionary<CacheKey, CachedFace>(CacheKey.Comparer);
@@ -34,21 +39,32 @@ namespace SharpFont {
             buffer = new ResizableArray<BufferEntry>(32);
         }
 
-        public void Clear () => buffer.Clear();
+        //public void Clear () => buffer.Clear();
+        public void Clear()
+        {
+            buffer.Clear();
+        }
 
-        public void AppendText (string text, TextFormat format) => AppendText(text, 0, text.Length, format);
+        //public void AppendText (string text, TextFormat format) => AppendText(text, 0, text.Length, format);
+        public void AppendText(string text, TextFormat format)
+        {
+            AppendText(text, 0, text.Length, format);
+        }
 
-        public void AppendText (string text, int startIndex, int count, TextFormat format) {
+        public void AppendText(string text, int startIndex, int count, TextFormat format)
+        {
             fixed (char* ptr = text)
                 AppendText(ptr + startIndex, count, format);
         }
 
-        public void AppendText (char[] text, int startIndex, int count, TextFormat format) {
+        public void AppendText(char[] text, int startIndex, int count, TextFormat format)
+        {
             fixed (char* ptr = text)
                 AppendText(ptr + startIndex, count, format);
         }
 
-        public void AppendText (char* text, int count, TextFormat format) {
+        public void AppendText(char* text, int count, TextFormat format)
+        {
             // look up the cache entry for the given font and size
             CachedFace cachedFace;
             var font = format.Font;
@@ -61,7 +77,8 @@ namespace SharpFont {
             var nextBreak = BreakCategory.None;
             var previous = new CodePoint();
             char* end = text + count;
-            while (text != end) {
+            while (text != end)
+            {
                 // handle surrogate pairs properly
                 CodePoint codePoint;
                 char c = *text++;
@@ -75,16 +92,18 @@ namespace SharpFont {
                     continue;
 
                 // get the glyph data
-                CachedGlyph glyph;
-                if (!cachedFace.Glyphs.TryGetValue(codePoint, out glyph) && !char.IsControl(c)) {
-                    var data = font.GetGlyph(codePoint, size);
-                    var width = data.RenderWidth;
-                    var height = data.RenderHeight;
+                CachedGlyph cachedGlyph;
+                if (!cachedFace.Glyphs.TryGetValue(codePoint, out cachedGlyph) && !char.IsControl(c))
+                {
+                    Glyph glyph = font.GetGlyph(codePoint, size);
+                    var width = glyph.RenderWidth;
+                    var height = glyph.RenderHeight;
                     if (width > atlas.Width || height > atlas.Height)
                         throw new InvalidOperationException("Glyph is larger than the size of the provided atlas.");
 
                     var rect = new Rect();
-                    if (width > 0 && height > 0) {
+                    if (width > 0 && height > 0)
+                    {
                         // render the glyph
                         var memSize = width * height;
                         var mem = memoryBuffer;
@@ -92,7 +111,8 @@ namespace SharpFont {
                             memoryBuffer = mem = new MemoryBuffer(memSize);
 
                         mem.Clear(memSize);
-                        data.RenderTo(new Surface {
+                        glyph.RenderTo(new Surface
+                        {
                             Bits = mem.Pointer,
                             Width = width,
                             Height = height,
@@ -101,7 +121,8 @@ namespace SharpFont {
 
                         // save the rasterized glyph in the user's atlas
                         rect = packer.Insert(width, height);
-                        if (rect.Height == 0) {
+                        if (rect.Height == 0)
+                        {
                             // didn't fit in the atlas... start a new sheet
                             currentPage++;
                             packer.Clear(atlas.Width, atlas.Height);
@@ -112,8 +133,8 @@ namespace SharpFont {
                         atlas.Insert(currentPage, rect.X, rect.Y, rect.Width, rect.Height, mem.Pointer);
                     }
 
-                    glyph = new CachedGlyph(rect, data.HorizontalMetrics.Bearing, data.HorizontalMetrics.Advance);
-                    cachedFace.Glyphs.Add(codePoint, glyph);
+                    cachedGlyph = new CachedGlyph(rect, glyph.HorizontalMetrics.Bearing, glyph.HorizontalMetrics.Advance);
+                    cachedFace.Glyphs.Add(codePoint, cachedGlyph);
                 }
 
                 // check for a kerning offset
@@ -123,7 +144,8 @@ namespace SharpFont {
                 // figure out whether this character can serve as a line break point
                 // TODO: more robust character class handling
                 var breakCategory = BreakCategory.None;
-                if (char.IsWhiteSpace(c)) {
+                if (char.IsWhiteSpace(c))
+                {
                     if (c == '\r' || c == '\n')
                         breakCategory = BreakCategory.Mandatory;
                     else
@@ -138,21 +160,25 @@ namespace SharpFont {
 
                 // alright, we have all the right glyph data cached and loaded
                 // append relevant info to our buffer; we'll do the actual layout later
-                buffer.Add(new BufferEntry {
-                    GlyphData = glyph,
+                buffer.Add(new BufferEntry
+                {
+                    GlyphData = cachedGlyph,
                     Kerning = kerning,
                     Break = breakCategory
                 });
             }
         }
 
-        public void PerformLayout (float x, float y, float width, float height, TextLayout layout) {
+        public void PerformLayout(float x, float y, float width, float height, TextLayout layout)
+        {
             layout.SetCount(buffer.Count);
 
             var pen = new Vector2(x, y);
-            for (int i = 0; i < buffer.Count; i++) {
+            for (int i = 0; i < buffer.Count; i++)
+            {
                 var entry = buffer[i];
-                if (entry.Break == BreakCategory.Mandatory) {
+                if (entry.Break == BreakCategory.Mandatory)
+                {
                     pen.X = x;
                     pen.Y += 32; // TODO: line spacing
                 }
@@ -177,63 +203,83 @@ namespace SharpFont {
             }
         }
 
-        struct BufferEntry {
+        struct BufferEntry
+        {
             public CachedGlyph GlyphData;
             public float Kerning;
             public BreakCategory Break;
         }
 
-        struct CachedFace {
+        struct CachedFace
+        {
             public FaceMetrics Metrics;
             public Dictionary<CodePoint, CachedGlyph> Glyphs;
 
-            public CachedFace (FontFace font, float size) {
+            public CachedFace(FontFace font, float size)
+            {
                 Metrics = font.GetFaceMetrics(size);
                 Glyphs = new Dictionary<CodePoint, CachedGlyph>();
             }
         }
 
-        class CachedGlyph {
+        class CachedGlyph
+        {
             public Rect Bounds;
             public Vector2 Bearing;
             public float AdvanceWidth;
 
-            public CachedGlyph (Rect bounds, Vector2 bearing, float advance) {
+            public CachedGlyph(Rect bounds, Vector2 bearing, float advance)
+            {
                 Bounds = bounds;
                 Bearing = bearing;
                 AdvanceWidth = advance;
             }
         }
 
-        struct CacheKey {
+        struct CacheKey
+        {
             public int Id;
             public float Size;
 
-            public CacheKey (int id, float size) {
+            public CacheKey(int id, float size)
+            {
                 Id = id;
                 Size = size;
             }
 
             public static readonly IEqualityComparer<CacheKey> Comparer = new CacheKeyComparer();
 
-            class CacheKeyComparer : IEqualityComparer<CacheKey> {
-                public bool Equals (CacheKey x, CacheKey y) => x.Id == y.Id && x.Size == y.Size;
-                public int GetHashCode (CacheKey obj) => obj.Id.GetHashCode() ^ obj.Size.GetHashCode();
+            class CacheKeyComparer : IEqualityComparer<CacheKey>
+            {
+                //public bool Equals (CacheKey x, CacheKey y) => x.Id == y.Id && x.Size == y.Size;
+                public bool Equals(CacheKey x, CacheKey y)
+                {
+                    return x.Id == y.Id && x.Size == y.Size;
+                }
+                //public int GetHashCode (CacheKey obj) => obj.Id.GetHashCode() ^ obj.Size.GetHashCode();
+                public int GetHashCode(CacheKey obj)
+                {
+                    return obj.Id.GetHashCode() ^ obj.Size.GetHashCode();
+                }
             }
         }
 
-        class MemoryBuffer {
+        class MemoryBuffer
+        {
             public IntPtr Pointer;
             int size;
 
-            public MemoryBuffer (int initialSize) {
+            public MemoryBuffer(int initialSize)
+            {
                 size = RoundSize(initialSize);
                 Pointer = Marshal.AllocHGlobal(size);
             }
 
-            public void Clear (int newSize) {
+            public void Clear(int newSize)
+            {
                 newSize = RoundSize(newSize);
-                if (newSize > size) {
+                if (newSize > size)
+                {
                     Pointer = Marshal.ReAllocHGlobal(Pointer, (IntPtr)newSize);
                     size = newSize;
                 }
@@ -243,10 +289,15 @@ namespace SharpFont {
                     *ptr = 0;
             }
 
-            static int RoundSize (int size) => (size + 3) & ~3;
+            //static int RoundSize (int size) => (size + 3) & ~3;
+            static int RoundSize(int size)
+            {
+                return (size + 3) & ~3;
+            }
         }
 
-        enum BreakCategory {
+        enum BreakCategory
+        {
             None,
             Opportunity,
             Mandatory

@@ -41,7 +41,11 @@ namespace SharpFont {
         /// Adds a font to the collection.
         /// </summary>
         /// <param name="fileName">The path to the font file.</param>
-        public void AddFontFile (string fileName) => AddFontFile(fileName, throwOnError: true);
+        //public void AddFontFile (string fileName) => AddFontFile(fileName, throwOnError: true);
+        public void AddFontFile(string fileName)
+        {
+            AddFontFile(fileName, throwOnError: true);
+        }
 
         /// <summary>
         /// Finds a font in the collection that matches the given parameters.

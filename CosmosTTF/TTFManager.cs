@@ -28,7 +28,7 @@ namespace CosmosTTF {
             }
 
             var processedGlyph = f.GetGlyph(new CodePoint(glyph), scalePx);
-            Surface surface = new Surface() { Width = (int)processedGlyph.RenderWidth, Height = (int)processedGlyph.RenderHeight };
+            Surface surface = new Surface() { Width = (int)processedGlyph.RenderWidth, Height = (int)processedGlyph.RenderHeight, Bits = Marshal.AllocHGlobal(processedGlyph.RenderWidth * processedGlyph.RenderHeight) };
             processedGlyph.RenderTo(surface);
 
             /* Todo: Maybe use Cosmos Bitmap directly in LunarFonts.Font? */

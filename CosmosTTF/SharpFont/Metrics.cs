@@ -1,11 +1,14 @@
 ﻿using System;
 using System.Numerics;
+using System.Runtime.InteropServices;
 
-namespace SharpFont {
+namespace SharpFont
+{
     /// <summary>
     /// Contains various metrics that apply to a font face as a whole, scaled for a particular size.
     /// </summary>
-    public sealed class FaceMetrics {
+    public sealed class FaceMetrics
+    {
         /// <summary>
         /// The distance from the baseline up to the top of the em box.
         /// </summary>
@@ -63,11 +66,12 @@ namespace SharpFont {
         /// <param name="underlinePosition">The underline position.</param>
         /// <param name="strikeoutSize">The strikeout size.</param>
         /// <param name="strikeoutPosition">The strikeout position.</param>
-        public FaceMetrics (
+        public FaceMetrics(
             float cellAscent, float cellDescent, float lineHeight, float xHeight,
             float capHeight, float underlineSize, float underlinePosition,
             float strikeoutSize, float strikeoutPosition
-        ) {
+        )
+        {
             CellAscent = cellAscent;
             CellDescent = cellDescent;
             LineHeight = lineHeight;
@@ -83,7 +87,8 @@ namespace SharpFont {
     /// <summary>
     /// Contains metrics for a single glyph.
     /// </summary>
-    public struct GlyphMetrics {
+    public struct GlyphMetrics
+    {
         /// <summary>
         /// The leading bearings; this is the offset from the pen at which to position the glyph.
         /// </summary>
@@ -106,7 +111,8 @@ namespace SharpFont {
         /// <param name="bearing">The bearings.</param>
         /// <param name="advance">The advance distance.</param>
         /// <param name="linearAdvance">The linear unhinted advance distance.</param>
-        public GlyphMetrics (Vector2 bearing, float advance, float linearAdvance) {
+        public GlyphMetrics(Vector2 bearing, float advance, float linearAdvance)
+        {
             Bearing = bearing;
             Advance = advance;
             LinearAdvance = linearAdvance;
@@ -116,7 +122,8 @@ namespace SharpFont {
     /// <summary>
     /// Represents an image surface in memory.
     /// </summary>
-    public struct Surface {
+    public struct Surface : IDisposable
+    {
         /// <summary>
         /// A pointer to the image data.
         /// </summary>
@@ -136,19 +143,26 @@ namespace SharpFont {
         /// The width of a row of pixels, in bytes.
         /// </summary>
         public int Pitch { get; set; }
+
+        public void Dispose()
+        {
+            Marshal.FreeHGlobal(this.Bits);
+        }
     }
 
     /// <summary>
     /// Represents a single Unicode codepoint.
     /// </summary>
-    public struct CodePoint : IComparable<CodePoint>, IEquatable<CodePoint> {
+    public struct CodePoint : IComparable<CodePoint>, IEquatable<CodePoint>
+    {
         readonly int value;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="CodePoint"/> struct.
         /// </summary>
         /// <param name="codePoint">The 32-bit value of the codepoint.</param>
-        public CodePoint (int codePoint) {
+        public CodePoint(int codePoint)
+        {
             value = codePoint;
         }
 
@@ -156,7 +170,8 @@ namespace SharpFont {
         /// Initializes a new instance of the <see cref="CodePoint"/> struct.
         /// </summary>
         /// <param name="character">The 16-bit value of the codepoint.</param>
-        public CodePoint (char character) {
+        public CodePoint(char character)
+        {
             value = character;
         }
 
@@ -165,7 +180,8 @@ namespace SharpFont {
         /// </summary>
         /// <param name="highSurrogate">The first member of a surrogate pair representing the codepoint.</param>
         /// <param name="lowSurrogate">The second member of a surrogate pair representing the codepoint.</param>
-        public CodePoint (char highSurrogate, char lowSurrogate) {
+        public CodePoint(char highSurrogate, char lowSurrogate)
+        {
             value = char.ConvertToUtf32(highSurrogate, lowSurrogate);
         }
 
@@ -174,21 +190,30 @@ namespace SharpFont {
         /// </summary>
         /// <param name="other">The value to compare.</param>
         /// <returns>A signed number indicating the relative values of this instance and <paramref name="other"/>.</returns>
-        public int CompareTo (CodePoint other) => value.CompareTo(other.value);
+        //public int CompareTo (CodePoint other) => value.CompareTo(other.value);
+        public int CompareTo(CodePoint other)
+        {
+            return value.CompareTo(other.value);
+        }
 
         /// <summary>
         /// Returns a value indicating whether this instance is equal to the specified object.
         /// </summary>
         /// <param name="obj">The object to compare.</param>
         /// <returns><c>true</c> if this instance equals <paramref name="other"/>; otherwise, <c>false</c>.</returns>
-        public bool Equals (CodePoint other) => value.Equals(other.value);
+        //public bool Equals (CodePoint other) => value.Equals(other.value);
+        public bool Equals(CodePoint other)
+        {
+            return value.Equals(other.value);
+        }
 
         /// <summary>
         /// Returns a value indicating whether this instance is equal to the specified object.
         /// </summary>
         /// <param name="obj">The object to compare.</param>
         /// <returns><c>true</c> if this instance equals <paramref name="obj"/>; otherwise, <c>false</c>.</returns>
-        public override bool Equals (object obj) {
+        public override bool Equals(object obj)
+        {
             var codepoint = obj as CodePoint?;
             if (codepoint == null)
                 return false;
@@ -200,13 +225,21 @@ namespace SharpFont {
         /// Returns the hash code for this instance.
         /// </summary>
         /// <returns>The instance's hashcode.</returns>
-        public override int GetHashCode () => value.GetHashCode();
+        //public override int GetHashCode () => value.GetHashCode();
+        public override int GetHashCode()
+        {
+            return value.GetHashCode();
+        }
 
         /// <summary>
         /// Converts the value to its equivalent string representation.
         /// </summary>
         /// <returns></returns>
-        public override string ToString () => $"{value} ({(char)value})";
+        //public override string ToString () => $"{value} ({(char)value})";
+        public override string ToString()
+        {
+            return string.Format("{0} ({1})", this.value, (char)this.value);
+        }
 
         /// <summary>
         /// Implements the equality operator.
@@ -214,7 +247,11 @@ namespace SharpFont {
         /// <param name="left">The left hand side of the operator.</param>
         /// <param name="right">The right hand side of the operator.</param>
         /// <returns>The result of the operator.</returns>
-        public static bool operator ==(CodePoint left, CodePoint right) => left.Equals(right);
+        //public static bool operator ==(CodePoint left, CodePoint right) => left.Equals(right);
+        public static bool operator ==(CodePoint left, CodePoint right)
+        {
+            return left.Equals(right);
+        }
 
         /// <summary>
         /// Implements the inequality operator.
@@ -222,7 +259,11 @@ namespace SharpFont {
         /// <param name="left">The left hand side of the operator.</param>
         /// <param name="right">The right hand side of the operator.</param>
         /// <returns>The result of the operator.</returns>
-        public static bool operator !=(CodePoint left, CodePoint right) => !left.Equals(right);
+        //public static bool operator !=(CodePoint left, CodePoint right) => !left.Equals(right);
+        public static bool operator !=(CodePoint left, CodePoint right)
+        {
+            return !left.Equals(right);
+        }
 
         /// <summary>
         /// Implements the less-than operator.
@@ -230,7 +271,11 @@ namespace SharpFont {
         /// <param name="left">The left hand side of the operator.</param>
         /// <param name="right">The right hand side of the operator.</param>
         /// <returns>The result of the operator.</returns>
-        public static bool operator <(CodePoint left, CodePoint right) => left.value < right.value;
+        //public static bool operator <(CodePoint left, CodePoint right) => left.value < right.value;
+        public static bool operator <(CodePoint left, CodePoint right)
+        {
+            return left.value < right.value;
+        }
 
         /// <summary>
         /// Implements the greater-than operator.
@@ -238,7 +283,11 @@ namespace SharpFont {
         /// <param name="left">The left hand side of the operator.</param>
         /// <param name="right">The right hand side of the operator.</param>
         /// <returns>The result of the operator.</returns>
-        public static bool operator >(CodePoint left, CodePoint right) => left.value > right.value;
+        //public static bool operator >(CodePoint left, CodePoint right) => left.value > right.value;
+        public static bool operator >(CodePoint left, CodePoint right)
+        {
+            return left.value > right.value;
+        }
 
         /// <summary>
         /// Implements the less-than-or-equal-to operator.
@@ -246,7 +295,11 @@ namespace SharpFont {
         /// <param name="left">The left hand side of the operator.</param>
         /// <param name="right">The right hand side of the operator.</param>
         /// <returns>The result of the operator.</returns>
-        public static bool operator <=(CodePoint left, CodePoint right) => left.value <= right.value;
+        //public static bool operator <=(CodePoint left, CodePoint right) => left.value <= right.value;
+        public static bool operator <=(CodePoint left, CodePoint right)
+        {
+            return left.value <= right.value;
+        }
 
         /// <summary>
         /// Implements the greater-than-or-equal-to operator.
@@ -254,31 +307,48 @@ namespace SharpFont {
         /// <param name="left">The left hand side of the operator.</param>
         /// <param name="right">The right hand side of the operator.</param>
         /// <returns>The result of the operator.</returns>
-        public static bool operator >=(CodePoint left, CodePoint right) => left.value >= right.value;
+        //public static bool operator >=(CodePoint left, CodePoint right) => left.value >= right.value;
+        public static bool operator >=(CodePoint left, CodePoint right)
+        {
+            return left.value >= right.value;
+        }
 
         /// <summary>
         /// Implements an explicit conversion from integer to <see cref="CodePoint"/>.
         /// </summary>
         /// <param name="codePoint">The codepoint value.</param>
-        public static explicit operator CodePoint (int codePoint) => new CodePoint(codePoint);
+        //public static explicit operator CodePoint (int codePoint) => new CodePoint(codePoint);
+        public static explicit operator CodePoint(int codePoint)
+        {
+            return new CodePoint(codePoint);
+        }
 
         /// <summary>
         /// Implements an implicit conversion from character to <see cref="CodePoint"/>.
         /// </summary>
         /// <param name="character">The character value.</param>
-        public static implicit operator CodePoint (char character) => new CodePoint(character);
+        //public static implicit operator CodePoint (char character) => new CodePoint(character);
+        public static implicit operator CodePoint(char character)
+        {
+            return new CodePoint(character);
+        }
 
         /// <summary>
         /// Implements an explicit conversion from <see cref="CodePoint"/> to character.
         /// </summary>
         /// <param name="codePoint">The codepoint value.</param>
-        public static explicit operator char (CodePoint codePoint) => (char)codePoint.value;
+        //public static explicit operator char (CodePoint codePoint) => (char)codePoint.value;
+        public static explicit operator char(CodePoint codePoint)
+        {
+            return (char)codePoint.value;
+        }
     }
 
     /// <summary>
     /// Specifies various font weights.
     /// </summary>
-    public enum FontWeight {
+    public enum FontWeight
+    {
         /// <summary>
         /// The weight is unknown or unspecified.
         /// </summary>
@@ -333,7 +403,8 @@ namespace SharpFont {
     /// <summary>
     /// Specifies the font stretching level.
     /// </summary>
-    public enum FontStretch {
+    public enum FontStretch
+    {
         /// <summary>
         /// The stretch is unknown or unspecified.
         /// </summary>
@@ -388,7 +459,8 @@ namespace SharpFont {
     /// <summary>
     /// Specifies various font styles.
     /// </summary>
-    public enum FontStyle {
+    public enum FontStyle
+    {
         /// <summary>
         /// No particular styles applied.
         /// </summary>

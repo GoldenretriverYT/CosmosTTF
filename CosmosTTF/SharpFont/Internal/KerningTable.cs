@@ -1,15 +1,19 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace SharpFont {
-    class KerningTable {
+namespace SharpFont
+{
+    class KerningTable
+    {
         Dictionary<uint, int> table;
 
-        KerningTable (Dictionary<uint, int> table) {
+        KerningTable(Dictionary<uint, int> table)
+        {
             this.table = table;
         }
 
-        public FUnit Lookup (int left, int right) {
+        public FUnit Lookup(int left, int right)
+        {
             var key = ((uint)left << 16) | (uint)right;
             int value;
             if (table.TryGetValue(key, out value))
@@ -17,7 +21,8 @@ namespace SharpFont {
             return (FUnit)0;
         }
 
-        public static KerningTable ReadKern (DataReader reader, TableRecord[] tables) {
+        public static KerningTable ReadKern(DataReader reader, TableRecord[] tables)
+        {
             // kern table is optional
             if (!SfntTables.SeekToTable(reader, tables, FourCC.Kern))
                 return null;
@@ -28,7 +33,8 @@ namespace SharpFont {
             // read each subtable and accumulate kerning values
             var tableData = new Dictionary<uint, int>();
             var subtableCount = reader.ReadUInt16BE();
-            for (int i = 0; i < subtableCount; i++) {
+            for (int i = 0; i < subtableCount; i++)
+            {
                 // skip version
                 var currentOffset = reader.Position;
                 reader.Skip(sizeof(short));
@@ -39,7 +45,8 @@ namespace SharpFont {
                 // we (and Windows) only support Format 0 tables
                 // only care about tables with horizontal kerning data
                 var kc = (KernCoverage)coverage;
-                if ((coverage & FormatMask) == 0 && (kc & KernCoverage.Horizontal) != 0 && (kc & KernCoverage.CrossStream) == 0) {
+                if ((coverage & FormatMask) == 0 && (kc & KernCoverage.Horizontal) != 0 && (kc & KernCoverage.CrossStream) == 0)
+                {
                     // read the number of entries; skip over the rest of the header
                     var entryCount = reader.ReadUInt16BE();
                     reader.Skip(sizeof(short) * 3);
@@ -48,7 +55,8 @@ namespace SharpFont {
                     var isOverride = (kc & KernCoverage.Override) != 0;
 
                     // read in each entry and accumulate its kerning data
-                    for (int j = 0; j < entryCount; j++) {
+                    for (int j = 0; j < entryCount; j++)
+                    {
                         var left = reader.ReadUInt16BE();
                         var right = reader.ReadUInt16BE();
                         var value = reader.ReadInt16BE();
@@ -58,7 +66,8 @@ namespace SharpFont {
                         var key = ((uint)left << 16) | right;
                         tableData.TryGetValue(key, out current);
 
-                        if (isMin) {
+                        if (isMin)
+                        {
                             if (current < value)
                                 tableData[key] = value;
                         }
@@ -79,7 +88,8 @@ namespace SharpFont {
         const uint FormatMask = 0xFFFF0000;
 
         [Flags]
-        enum KernCoverage {
+        enum KernCoverage
+        {
             None = 0,
             Horizontal = 0x1,
             Minimum = 0x2,
