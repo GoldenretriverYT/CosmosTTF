@@ -151,6 +151,9 @@ namespace LunarLabs.Fonts {
                                 break;
                         }
                         break;
+                    case PLATFORM_ID_UNICODE:
+                        _indexMap = cmap + ReadU32(encodingRecord + 4);
+                        break;
                 }
             }
 
