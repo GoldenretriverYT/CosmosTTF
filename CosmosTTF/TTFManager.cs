@@ -3,7 +3,7 @@ using cs_ttf;
 using LunarLabs.Fonts;
 using System.Drawing;
 using System.Runtime.InteropServices;
-using Point = Cosmos.System.Graphics.Point;
+using Point = System.Drawing.Point;
 
 namespace CosmosTTF {
     public unsafe static class TTFManager {
@@ -66,7 +66,7 @@ namespace CosmosTTF {
         /// <param name="font"></param>
         /// <param name="px"></param>
         /// <param name="point"></param>
-        public static void DrawStringTTF(this Canvas cv, Pen pen, string text, string font, float px, Point point, float spacingMultiplier = 1f) {
+        public static void DrawStringTTF(this Canvas cv, Color color, string text, string font, float px, Point point, float spacingMultiplier = 1f) {
             prevCanv = cv;
             float offX = 0;
             float offY = 0;
@@ -77,8 +77,8 @@ namespace CosmosTTF {
                     continue;
                 }
 
-                GlyphResult g = RenderGlyphAsBitmap(font, c, pen.Color, px);
-                cv.DrawImageAlpha(g.bmp, new Point(point.X + (int)offX, point.Y + g.offY));
+                GlyphResult g = RenderGlyphAsBitmap(font, c, color, px);
+                cv.DrawImageAlpha(g.bmp, point.X + (int)offX, point.Y + g.offY);
                 offX += g.offX;
             }
         }
@@ -101,8 +101,8 @@ namespace CosmosTTF {
         }
 
         internal static void DebugUIPrint(string txt, int offY = 0) {
-            prevCanv.DrawFilledRectangle(new Pen(Color.Black), new Point(0, offY), 1000, 16);
-            prevCanv.DrawString(txt, Cosmos.System.Graphics.Fonts.PCScreenFont.Default, new Pen(Color.White, 2), new Point(16, offY));
+            prevCanv.DrawFilledRectangle(Color.Black, 0, offY, 1000, 16);
+            prevCanv.DrawString(txt, Cosmos.System.Graphics.Fonts.PCScreenFont.Default, Color.White, 16, offY);
             prevCanv.Display();
         }
     }
