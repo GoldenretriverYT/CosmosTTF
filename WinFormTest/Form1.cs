@@ -8,11 +8,11 @@ namespace WinFormTest {
         }
 
         private void Form1_Load(object sender, EventArgs e) {
-            TTFManager.RegisterFont("arial", File.ReadAllBytes("arial.ttf"));
-            TTFManager.RegisterFont("inconsolata", File.ReadAllBytes("inconsolata.ttf"));
+            TTFManager.RegisterFont("arial", File.ReadAllBytes("swansea.ttf"));
+            //TTFManager.RegisterFont("inconsolata", File.ReadAllBytes("inconsolata.ttf"));
 
             TryFont(pictureBox1, "arial");
-            TryFont(pictureBox2, "inconsolata");
+            //TryFont(pictureBox2, "inconsolata");
         }
 
         public void TryFont(PictureBox pb, string font) {
@@ -21,11 +21,9 @@ namespace WinFormTest {
 
             float offX = 0;
 
-            foreach (char c in "Hello World") {
-                GlyphResult g = TTFManager.RenderGlyphAsBitmap(font, c, Color.Black, 48);
-                bmpG.DrawImage(IntsToBitmap(g.bmp.rawData, (int)g.bmp.Width, (int)g.bmp.Height, out IntPtr _iptr), new Point((int)offX, 100 + g.offY));
-                offX += g.offX;
-            }
+            var bmpRes = TTFManager.RenderToBitmap(Color.Black, "Hello World", "arial", 48);
+            
+            bmpG.DrawImage(IntsToBitmap(bmpRes.rawData, (int)bmpRes.Width, (int)bmpRes.Height, out IntPtr _iptr), new Point(0, 70));
 
             pb.Image = finalBmp;
         }
