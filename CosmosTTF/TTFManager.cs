@@ -30,12 +30,15 @@ namespace CosmosTTF {
         /// <exception cref="Exception"></exception>
         public static GlyphResult RenderGlyphAsBitmap(string font, char glyph, Color color, float scalePx = 16) {
             var rgbOffset = ((color.R & 0xFF) << 16) + ((color.G & 0xFF) << 8) + color.B;
-            if (!fonts.TryGetValue(font, out Font f)) {
-                throw new Exception("Font is not registered");
+            var glyphCacheKey = font + glyph + scalePx + rgbOffset.ToString();
+
+            if (glyphCache.TryGetValue(glyphCacheKey, out GlyphResult cached))
+            {
+                return cached;
             }
 
-            if (glyphCache.TryGetValue(font + glyph + scalePx + rgbOffset.ToString(), out GlyphResult cached)) {
-                return cached;
+            if (!fonts.TryGetValue(font, out Font f)) {
+                throw new Exception("Font is not registered");
             }
 
             float scale = f.ScaleInPixels(scalePx);
@@ -52,8 +55,8 @@ namespace CosmosTTF {
                 }
             }
 
-            glyphCache[font + glyph + scalePx + rgbOffset.ToString()] = new(bmp, glyphRendered.xAdvance, glyphRendered.yOfs);
-            glyphCacheKeys.Add(font + glyph + scalePx + rgbOffset.ToString());
+            glyphCache[glyphCacheKey] = new(bmp, glyphRendered.xAdvance, glyphRendered.yOfs);
+            glyphCacheKeys.Add(glyphCacheKey);
             if (glyphCache.Count > GlyphCacheSize) glyphCache.Remove(glyphCacheKeys[0]); glyphCacheKeys.RemoveAt(0);
             return new(bmp, glyphRendered.xAdvance, glyphRendered.yOfs);
         }
