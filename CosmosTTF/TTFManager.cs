@@ -8,8 +8,8 @@ using Point = System.Drawing.Point;
 
 namespace CosmosTTF {
     public static class TTFManager {
-        private static CustomDictString<Font> fonts = new();
-        private static CustomDictString<GlyphResult> glyphCache = new();
+        private static Dictionary<string, Font> fonts = new();
+        private static Dictionary<string, GlyphResult> glyphCache = new();
         private static List<string> glyphCacheKeys = new();
 
         public static int GlyphCacheSize { get; set; } = 512;
@@ -30,11 +30,11 @@ namespace CosmosTTF {
         /// <exception cref="Exception"></exception>
         public static GlyphResult RenderGlyphAsBitmap(string font, char glyph, Color color, float scalePx = 16) {
             var rgbOffset = ((color.R & 0xFF) << 16) + ((color.G & 0xFF) << 8) + color.B;
-            if (!fonts.TryGet(font, out Font f)) {
+            if (!fonts.TryGetValue(font, out Font f)) {
                 throw new Exception("Font is not registered");
             }
 
-            if (glyphCache.TryGet(font + glyph + scalePx + rgbOffset.ToString(), out GlyphResult cached)) {
+            if (glyphCache.TryGetValue(font + glyph + scalePx + rgbOffset.ToString(), out GlyphResult cached)) {
                 return cached;
             }
 
@@ -86,7 +86,7 @@ namespace CosmosTTF {
         }
 
         public static int GetTTFWidth(this string text, string font, float px) {
-            if (!fonts.TryGet(font, out Font f)) {
+            if (!fonts.TryGetValue(font, out Font f)) {
                 throw new Exception("Font is not registered");
             }
 
