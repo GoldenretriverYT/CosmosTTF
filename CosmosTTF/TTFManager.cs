@@ -5,12 +5,16 @@ using System.Collections.Generic;
 using LunarLabs.Fonts;
 using System.Drawing;
 using Point = System.Drawing.Point;
+using Cosmos.Debug.Kernel;
+using Cosmos.System;
 
 namespace CosmosTTF {
     public static class TTFManager {
         private static Dictionary<string, Font> fonts = new();
         private static Dictionary<string, GlyphResult> glyphCache = new();
         private static List<string> glyphCacheKeys = new();
+
+        private static Debugger dbg = new("System", "TTFManager");
 
         public static int GlyphCacheSize { get; set; } = 512;
         private static Canvas prevCanv;
@@ -62,27 +66,57 @@ namespace CosmosTTF {
         }
 
         /// <summary>
-        /// Draws a string using the registered TTF font provided under the font parameter. Alpha in pen color will be ignored. Do NOT forget to run Canvas.Display, or else it, well, wont display!
+        /// Draws a string using the registered TTF font provided under the font parameter. Alpha in pen color will be ignored.
         /// </summary>
-        /// <param name="cv"></param>
-        /// <param name="pen"></param>
-        /// <param name="text"></param>
-        /// <param name="font"></param>
-        /// <param name="px"></param>
-        /// <param name="point"></param>
-        public static void DrawStringTTF(this Canvas cv, Color pen, string text, string font, float px, System.Drawing.Point point, float spacingMultiplier = 1f) {
+        public static void DrawStringTTF(this Canvas cv, Color pen, string text, string font, int px, System.Drawing.Point point)
+        {
             prevCanv = cv;
             float offX = 0;
-            float offY = 0;
+
+            foreach (char c in text)
+            {
+                GlyphResult g = RenderGlyphAsBitmap(font, c, pen, px);
+                var pos = new Point(point.X + (int)offX, point.Y + g.offY);
+                cv.DrawImageAlpha(g.bmp, pos.X, pos.Y);
+                offX += g.offX;
+            }
+        }
+        
+        /// <summary>
+        /// Draws a string using the registered TTF font provided under the font parameter. Alpha in pen color will be ignored. This method is the checked variant, which will check for boundary exceeds (using maxWidth and maxHeight) and it will also check the validity of characters.
+        /// Usage of this method is only advised when actually needed as this has performance implications.
+        /// </summary>
+        public static void DrawStringTTFChecked(this Canvas cv, Color pen, string text, string font, int px, System.Drawing.Point point, int maxWidth = Int32.MaxValue, int maxHeight = Int32.MaxValue, bool debug = false) {
+            prevCanv = cv;
+            float offX = 0;
+            int offY = 0;
 
             foreach (char c in text) {
                 if(c == '\n') {
                     offY += px;
+                    offX = 0;
+                    if (offY > maxHeight-px) return;
+                    
                     continue;
                 }
 
+                if ((c < 32 || (c >= 127 && c < 160)))
+                {
+                    continue; // rendering control characters would crash!
+                }
+
+                //if (debug) dbg.Send(offX + " > " + maxWidth + " - " + px + " = " + (offX > maxWidth - px));
+                if (offX > maxWidth - px)  // not perfect char width estimation but works fine
+                {
+                    offX = 0;
+                    offY += px;
+                    continue;
+                }
+
+               ///if (debug) dbg.Send(((ushort)c).ToString());
+                
                 GlyphResult g = RenderGlyphAsBitmap(font, c, pen, px);
-                var pos = new Point(point.X + (int)offX, point.Y + g.offY);
+                var pos = new Point(point.X + (int)offX, point.Y + offY + g.offY);
                 cv.DrawImageAlpha(g.bmp, pos.X, pos.Y);
                 offX += g.offX;
             }
