@@ -46,23 +46,23 @@ namespace CosmosTTF {
             }
 
             float scale = f.ScaleInPixels(scalePx);
-            var glyphRendered = f.RenderGlyph(glyph, scale);
+            var glyphRendered = f.RenderGlyph(glyph, scale, rgbOffset);
             var image = glyphRendered.Image;
 
             /* Todo: Maybe use Cosmos Bitmap directly in LunarFonts.Font? */
-            var bmp = new Bitmap((uint)image.Width, (uint)image.Height, ColorDepth.ColorDepth32);
+            /*var bmp = new Bitmap((uint)image.Width, (uint)image.Height, ColorDepth.ColorDepth32);
 
             for (int j = 0; j < image.Height; j++) {
                 for (int i = 0; i < image.Width; i++) {
                     byte alpha = image.Pixels[i + j * image.Width];
                     bmp.rawData[i + j * image.Width] = ((int)alpha << 24) + rgbOffset;
                 }
-            }
+            }*/
 
-            glyphCache[glyphCacheKey] = new(bmp, glyphRendered.xAdvance, glyphRendered.yOfs);
+            glyphCache[glyphCacheKey] = new(image, glyphRendered.xAdvance, glyphRendered.yOfs);
             glyphCacheKeys.Add(glyphCacheKey);
             if (glyphCache.Count > GlyphCacheSize) glyphCache.Remove(glyphCacheKeys[0]); glyphCacheKeys.RemoveAt(0);
-            return new(bmp, glyphRendered.xAdvance, glyphRendered.yOfs);
+            return glyphCache[glyphCacheKey];
         }
 
         /// <summary>
@@ -72,10 +72,11 @@ namespace CosmosTTF {
         {
             prevCanv = cv;
             float offX = 0;
+            GlyphResult g;
 
             foreach (char c in text)
             {
-                GlyphResult g = RenderGlyphAsBitmap(font, c, pen, px);
+                g = RenderGlyphAsBitmap(font, c, pen, px);
                 var pos = new Point(point.X + (int)offX, point.Y + g.offY);
                 cv.DrawImageAlpha(g.bmp, pos.X, pos.Y);
                 offX += g.offX;

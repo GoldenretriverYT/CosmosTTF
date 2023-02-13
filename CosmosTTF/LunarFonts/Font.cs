@@ -1,6 +1,9 @@
-﻿using CosmosTTF;
+﻿using Cosmos.Debug.Kernel;
+using Cosmos.System.Graphics;
+using CosmosTTF;
 using System;
 using System.Collections.Generic;
+using System.Reflection;
 using System.Text;
 
 namespace LunarLabs.Fonts {
@@ -10,13 +13,9 @@ namespace LunarLabs.Fonts {
         public byte[] Pixels;
 
         public GlyphBitmap(int width, int height) {
-            //TTFManager.DebugUIPrint("GlyphBitmap::ctor: Log Point 1");
             Width = width;
-            //TTFManager.DebugUIPrint("GlyphBitmap::ctor: Log Point 2");
             Height = height;
-            //TTFManager.DebugUIPrint("GlyphBitmap::ctor: Log Point 3 " + width + "x" + height);
             Pixels = new byte[width * height];
-            //TTFManager.DebugUIPrint("GlyphBitmap::ctor: Log Point 4");
         }
 
         public void Draw(GlyphBitmap other, int x, int y) {
@@ -31,7 +30,7 @@ namespace LunarLabs.Fonts {
     }
 
     public class FontGlyph {
-        public GlyphBitmap Image { get; internal set; }
+        public Bitmap Image { get; internal set; }
         public int xOfs { get; internal set; }
         public int yOfs { get; internal set; }
         public int xAdvance { get; internal set; }
@@ -80,6 +79,7 @@ namespace LunarLabs.Fonts {
     }
 
     public class Font {
+        public Debugger debugger = new("System", "TTF");
         private int _glyphCount;
         private byte[] _data;              // pointer to .ttf file
 
@@ -307,43 +307,51 @@ namespace LunarLabs.Fonts {
             return pixelHeight / fHeight;
         }
 
-        private GlyphBitmap GetCodepointBitmap(float scaleX, float scaleY, char codepoint, out int xoff, out int yoff) {
-            //TTFManager.DebugUIPrint("GetCodepointBitmap - " + codepoint + ": Log Point 1");
+        private Bitmap GetCodepointBitmap(float scaleX, float scaleY, char codepoint, int rgbOffset, out int xoff, out int yoff) {
+            //debugger.Send("GetCodepointBitmap - " + codepoint + ": Log Point 1");
             var gidx = FindGlyphIndex(codepoint);
-            //TTFManager.DebugUIPrint("GetCodepointBitmap - " + codepoint + ": Log Point 2");
-            return GetGlyphBitmap(scaleX, scaleY, 0, 0, gidx, out xoff, out yoff);
+            //debugger.Send("GetCodepointBitmap - " + codepoint + ": Log Point 2");
+            return GetGlyphBitmap(scaleX, scaleY, 0, 0, gidx, rgbOffset, out xoff, out yoff);
         }
 
-        private GlyphBitmap GetGlyphBitmap(float scale_x, float scale_y, float shift_x, float shift_y, int glyph, out int xoff, out int yoff) {
+        private Bitmap GetGlyphBitmap(float scale_x, float scale_y, float shift_x, float shift_y, int glyph, int rgbOffset, out int xoff, out int yoff) {
+            //debugger.Send("GetGlyphBitmap - " + glyph + ": Log Point 1");
             var vertices = GetGlyphShape(glyph);
-
+            //debugger.Send("GetGlyphBitmap - " + glyph + ": Log Point 2");
             if (scale_x == 0)
                 scale_x = scale_y;
-
+            //debugger.Send("GetGlyphBitmap - " + glyph + ": Log Point 3");
             if (scale_y == 0) {
                 if (scale_x == 0) {
                     throw new Exception("invalid scale");
                 }
-
+                //debugger.Send("GetGlyphBitmap - " + glyph + ": Log Point 4");
                 scale_y = scale_x;
             }
 
             int ix0, iy0, ix1, iy1;
 
+            //debugger.Send("GetGlyphBitmap - " + glyph + ": Log Point 5");
             GetGlyphBitmapBox(glyph, scale_x, scale_y, shift_x, shift_y, out ix0, out iy0, out ix1, out iy1);
+            //debugger.Send("GetGlyphBitmap - " + glyph + ": Log Point 6");
 
             int w = (ix1 - ix0);
             int h = (iy1 - iy0);
-
+            //debugger.Send("GetGlyphBitmap - " + glyph + ": Log Point 7 " + w + " " + h);
+            
             if (w <= 0 || h <= 0) {
                 throw new Exception("invalid glyph size");
             }
 
+            //debugger.Send("GetGlyphBitmap - " + glyph + ": Log Point 8");
             // now we get the size
-            var result = new GlyphBitmap(w, h);
+            //debugger.Send("GetGlyphBitmap - " + glyph + ": Log Point 9");
+            var result = new Bitmap((uint)w, (uint)h, ColorDepth.ColorDepth32);
+            //debugger.Send("GetGlyphBitmap - " + glyph + ": Log Point 10");
             xoff = ix0;
             yoff = iy0;
-            Rasterize(result, 0.35f, vertices, scale_x, scale_y, shift_x, shift_y, ix0, iy0, true);
+            //debugger.Send("GetGlyphBitmap - " + glyph + ": Log Point 11");
+            Rasterize(result, 0.35f, vertices, scale_x, scale_y, shift_x, shift_y, ix0, iy0, true, rgbOffset);
             return result;
         }
 
@@ -905,34 +913,44 @@ namespace LunarLabs.Fonts {
             }
         }
 
-        private void Rasterize(GlyphBitmap bitmap, float flatnessInPixels, List<Vertex> vertices, float scaleX, float scaleY, float shiftX, float shiftY, int XOff, int YOff, bool Invert) {
+        private void Rasterize(Bitmap bitmap, float flatnessInPixels, List<Vertex> vertices, float scaleX, float scaleY, float shiftX, float shiftY, int XOff, int YOff, bool Invert, int rgbOffset) {
             float scale = scaleX < scaleY ? scaleX : scaleY;
-
+            //debugger.Send("Rasterize: Log Point 1");
             int[] windingLengths;
             List<Point> windings;
+            //debugger.Send("Rasterize: Log Point 2");
             FlattenCurves(vertices, flatnessInPixels / scale, out windingLengths, out windings);
+            //debugger.Send("Rasterize: Log Point 3");
             if (windings.Count > 0) {
-                Rasterize(bitmap, windings, windingLengths, scaleX, scaleY, shiftX, shiftY, XOff, YOff, Invert);
+                //debugger.Send("Rasterize: Log Point 4");
+                Rasterize(bitmap, windings, windingLengths, scaleX, scaleY, shiftX, shiftY, XOff, YOff, Invert, rgbOffset);
+                //debugger.Send("Rasterize: Log Point 5");
             }
         }
 
-        private void Rasterize(GlyphBitmap bitmap, List<Point> points, int[] windings, float scaleX, float scaleY, float shiftX, float shiftY, int XOff, int YOff, bool invert) {
+        private void Rasterize(Bitmap bitmap, List<Point> points, int[] windings, float scaleX, float scaleY, float shiftX, float shiftY, int XOff, int YOff, bool invert, int rgbOffset) {
             int ptOfs = 0;
+            //debugger.Send("Rasterize: Log Point 6");
 
             float yScaleInv = invert ? -scaleY : scaleY;
-
+            //debugger.Send("Rasterize: Log Point 7");
             // this value should divide 255 evenly; otherwise we won't reach full opacity
             int vSubSamples = (bitmap.Height < 8) ? 15 : 5;
-
+            //debugger.Send("Rasterize: Log Point 8");
             var edgeList = new List<Edge>(16);
             int m = 0;
 
+            //debugger.Send("Rasterize: Log Point 9");
+
             for (int i = 0; i < windings.Length; i++) {
+                //debugger.Send("Rasterize: Log Point 10");
                 ptOfs = m;
 
                 m += windings[i];
                 int j = windings[i] - 1;
                 int k = 0;
+
+                //debugger.Send("Rasterize: Log Point 11");
 
                 while (k < windings[i]) {
 
@@ -964,27 +982,34 @@ namespace LunarLabs.Fonts {
                     k++;
                 }
             }
+            //debugger.Send("Rasterize: Log Point 12");
 
             points.Clear();
 
             int[] keys = new int[edgeList.Count];
 
+            //debugger.Send("Rasterize: Log Point 13");
             int idx = 0;
             foreach(Edge edge in edgeList) {
                 keys[idx] = (int)edge.y0;
                 idx++;
             }
 
+            //debugger.Send("Rasterize: Log Point 14");
+
             Edge[] edgeArray = edgeList.ToArray();
             Sort(edgeArray, 0, edgeArray.Length-1);
             edgeList = new List<Edge>(edgeArray);
+
+            //debugger.Send("Rasterize: Log Point 15");
 
             var temp = new Edge();
             temp.y0 = 10000000;
             edgeList.Add(temp);
 
+            //debugger.Send("Rasterize: Log Point 16");
             // now, traverse the scanlines and find the intersections on each scanline, use xor winding rule
-            RasterizeSortedEdges(bitmap, edgeList, vSubSamples, XOff, YOff);
+            RasterizeSortedEdges(bitmap, edgeList, vSubSamples, XOff, YOff, rgbOffset);
         }
 
         private int EdgeCompare(Edge pa, Edge pb) {
@@ -1022,12 +1047,12 @@ namespace LunarLabs.Fonts {
             return z;
         }
 
-        private void RasterizeSortedEdges(GlyphBitmap bitmap, List<Edge> e, int vSubSamples, int offX, int off_y) {
+        private void RasterizeSortedEdges(Bitmap bitmap, List<Edge> e, int vSubSamples, int offX, int off_y, int rgbOffset) {
             int eIndex = 0;
 
             ActiveEdge active = null;
             int max_weight = 255 / vSubSamples;  // weight per vertical scanline
-
+            //debugger.Send("RasterizeSortedEdges: Log Point 1");
             int y = off_y * vSubSamples;
 
             int n = e.Count - 1;
@@ -1035,10 +1060,13 @@ namespace LunarLabs.Fonts {
             tempEdge.y0 = (off_y + bitmap.Height) * vSubSamples + 1;
             e[n] = tempEdge;
 
+            //debugger.Send("RasterizeSortedEdges: Log Point 2");
+
             var scanline = new byte[bitmap.Width];
 
+            //debugger.Send(bitmap.Width + " " + bitmap.Height);
             float scanY = 0;
-
+            //debugger.Send("RasterizeSortedEdges: Log Point 3");
             int j = 0;
             while (j < bitmap.Height) {
                 for (int iii = 0; iii < bitmap.Width; iii++) {
@@ -1128,20 +1156,27 @@ namespace LunarLabs.Fonts {
 
                     // now process all active edges in XOR fashion
                     if (active != null) {
-                        FillActiveEdges(scanline, bitmap.Width, active, max_weight);
+                        FillActiveEdges(scanline, (int)bitmap.Width, active, max_weight);
                     }
 
                     y++;
                 }
 
+                //debugger.Send("RasterizeSortedEdges: Log Point 4");
+
                 for (int iii = 0; iii < bitmap.Width; iii++)
                     if (scanline[iii] > 0) // OPTIMIZATION?
                     {
-                        int ofs = iii + j * bitmap.Width;
-                        bitmap.Pixels[ofs] = scanline[iii];
+                        //debugger.Send("RasterizeSortedEdges: Log Point 5");
+                        int ofs = (int)(iii + j * bitmap.Width);
+                        //debugger.Send(ofs.ToString());
+                        bitmap.rawData[ofs] = ((int)scanline[iii] << 24) + rgbOffset;
+                        //debugger.Send("RasterizeSortedEdges: Log Point 6");
                     }
 
                 j++;
+
+                //debugger.Send("RasterizeSortedEdges: Log Point 7");
             }
         }
 
@@ -1205,67 +1240,67 @@ namespace LunarLabs.Fonts {
             return (P > 0);
         }
 
-        public FontGlyph RenderGlyph(char ID, float scale) {
-            //TTFManager.DebugUIPrint("FontRenderGlyph - " + ID + ": Log Point 1");
+        public FontGlyph RenderGlyph(char ID, float scale, int rgbOffset) {
+            //debugger.Send("FontRenderGlyph - " + ID + ": Log Point 1");
             if (!HasGlyph(ID)) {
-                //TTFManager.DebugUIPrint("FontRenderGlyph - " + ID + ": Log Point 2");
+                //debugger.Send("FontRenderGlyph - " + ID + ": Log Point 2");
                 return null;
             }
 
-            //TTFManager.DebugUIPrint("FontRenderGlyph - " + ID + ": Log Point 3");
+            //debugger.Send("FontRenderGlyph - " + ID + ": Log Point 3");
 
             var glyphTarget = new FontGlyph();
 
-            //TTFManager.DebugUIPrint("FontRenderGlyph - " + ID + ": Log Point 4");
+            //debugger.Send("FontRenderGlyph - " + ID + ": Log Point 4");
             int xOfs, yOfs;
 
-            //TTFManager.DebugUIPrint("FontRenderGlyph - " + ID + ": Log Point 5");
+            //debugger.Send("FontRenderGlyph - " + ID + ": Log Point 5");
 
             if (ID == ' ') {
-                //TTFManager.DebugUIPrint("FontRenderGlyph - " + ID + ": Log Point 6");
+                //debugger.Send("FontRenderGlyph - " + ID + ": Log Point 6");
                 ID = '_';
-                //TTFManager.DebugUIPrint("FontRenderGlyph - " + ID + ": Log Point 7");
-                GetCodepointBitmap(scale, scale, ID, out xOfs, out yOfs);
-                //TTFManager.DebugUIPrint("FontRenderGlyph - " + ID + ": Log Point 8");
-                glyphTarget.Image = new GlyphBitmap(4, 4);
-                //TTFManager.DebugUIPrint("FontRenderGlyph - " + ID + ": Log Point 9");
+                //debugger.Send("FontRenderGlyph - " + ID + ": Log Point 7");
+                GetCodepointBitmap(scale, scale, ID, rgbOffset, out xOfs, out yOfs);
+                //debugger.Send("FontRenderGlyph - " + ID + ": Log Point 8");
+                glyphTarget.Image = new Bitmap((uint)4, (uint)4, ColorDepth.ColorDepth32);
+                //debugger.Send("FontRenderGlyph - " + ID + ": Log Point 9");
             } else {
-                //TTFManager.DebugUIPrint("FontRenderGlyph - " + ID + ": Log Point 10");
+                //debugger.Send("FontRenderGlyph - " + ID + ": Log Point 10");
                 if (!HasGlyph(ID)) {
-                    //TTFManager.DebugUIPrint("FontRenderGlyph - " + ID + ": Log Point 11");
+                    //debugger.Send("FontRenderGlyph - " + ID + ": Log Point 11");
                     if (char.IsLetter(ID)) {
-                        //TTFManager.DebugUIPrint("FontRenderGlyph - " + ID + ": Log Point 12");
+                        //debugger.Send("FontRenderGlyph - " + ID + ": Log Point 12");
                         if (char.IsUpper(ID)) {
-                            //TTFManager.DebugUIPrint("FontRenderGlyph - " + ID + ": Log Point 13");
+                            //debugger.Send("FontRenderGlyph - " + ID + ": Log Point 13");
                             ID = char.ToLowerInvariant(ID);
-                            //TTFManager.DebugUIPrint("FontRenderGlyph - " + ID + ": Log Point 14");
+                            //debugger.Send("FontRenderGlyph - " + ID + ": Log Point 14");
                         } else {
-                            //TTFManager.DebugUIPrint("FontRenderGlyph - " + ID + ": Log Point 17");
+                            //debugger.Send("FontRenderGlyph - " + ID + ": Log Point 17");
                             ID = char.ToUpperInvariant(ID);
-                            //TTFManager.DebugUIPrint("FontRenderGlyph - " + ID + ": Log Point 15");
+                            //debugger.Send("FontRenderGlyph - " + ID + ": Log Point 15");
                         }
                     }
                 }
 
-                //TTFManager.DebugUIPrint("FontRenderGlyph - " + ID + ": Log Point 16");
-                glyphTarget.Image = GetCodepointBitmap(scale, scale, ID, out xOfs, out yOfs);
-                //TTFManager.DebugUIPrint("FontRenderGlyph - " + ID + ": Log Point 18");
+                //debugger.Send("FontRenderGlyph - " + ID + ": Log Point 16");
+                glyphTarget.Image = GetCodepointBitmap(scale, scale, ID, rgbOffset, out xOfs, out yOfs);
+                //debugger.Send("FontRenderGlyph - " + ID + ": Log Point 18");
             }
 
-            //TTFManager.DebugUIPrint("FontRenderGlyph - " + ID + ": Log Point 19");
+            //debugger.Send("FontRenderGlyph - " + ID + ": Log Point 19");
             glyphTarget.xOfs = xOfs;
             glyphTarget.yOfs = yOfs;
-            //TTFManager.DebugUIPrint("FontRenderGlyph - " + ID + ": Log Point 20");
+            //debugger.Send("FontRenderGlyph - " + ID + ": Log Point 20");
 
-            //TTFManager.DebugUIPrint("FontRenderGlyph - " + ID + ": Log Point 21");
+            //debugger.Send("FontRenderGlyph - " + ID + ": Log Point 21");
             int xAdv, lsb;
-            //TTFManager.DebugUIPrint("FontRenderGlyph - " + ID + ": Log Point 22");
+            //debugger.Send("FontRenderGlyph - " + ID + ": Log Point 22");
             GetCodepointHMetrics(ID, out xAdv, out lsb);
-            //TTFManager.DebugUIPrint("FontRenderGlyph - " + ID + ": Log Point 23");
+            //debugger.Send("FontRenderGlyph - " + ID + ": Log Point 23");
             glyphTarget.xAdvance = (int)Math.Floor(xAdv * scale);
-            //TTFManager.DebugUIPrint("FontRenderGlyph - " + ID + ": Log Point 24");
+            //debugger.Send("FontRenderGlyph - " + ID + ": Log Point 24");
 
-            //TTFManager.DebugUIPrint("FontRenderGlyph - " + ID + ": Log Point 25");
+            //debugger.Send("FontRenderGlyph - " + ID + ": Log Point 25");
             return glyphTarget;
         }
 
