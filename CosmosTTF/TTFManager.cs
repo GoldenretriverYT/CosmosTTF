@@ -70,28 +70,24 @@ if (aValue < 0)
             
             var glyphCacheKey = font + glyph + scalePx + rgbOffsetStr;
 
-            if (glyphCache.TryGetValue(glyphCacheKey, out GlyphResult cached))
-            {
-                return cached;
+            foreach (var key in glyphCache.Keys) {
+                if (key == glyphCacheKey) return glyphCache[key];
             }
 
-            if (!fonts.TryGetValue(font, out Font f)) {
-                throw new Exception("Font is not registered");
+            Font f = null;
+            
+            foreach(var fontName in fonts.Keys) {
+                if (fontName == font) {
+                    f = fonts[fontName];
+                    break;
+                }
             }
+
+            if (f == null) throw new Exception("Font not found!");
 
             float scale = f.ScaleInPixels(scalePx);
             var glyphRendered = f.RenderGlyph(glyph, scale, rgbOffset);
             var image = glyphRendered.Image;
-
-            /* Todo: Maybe use Cosmos Bitmap directly in LunarFonts.Font? */
-            /*var bmp = new Bitmap((uint)image.Width, (uint)image.Height, ColorDepth.ColorDepth32);
-
-            for (int j = 0; j < image.Height; j++) {
-                for (int i = 0; i < image.Width; i++) {
-                    byte alpha = image.Pixels[i + j * image.Width];
-                    bmp.rawData[i + j * image.Width] = ((int)alpha << 24) + rgbOffset;
-                }
-            }*/
 
             glyphCache[glyphCacheKey] = new(image, glyphRendered.xAdvance, glyphRendered.yOfs);
             glyphCacheKeys.Add(glyphCacheKey);
@@ -111,8 +107,7 @@ if (aValue < 0)
             foreach (char c in text)
             {
                 g = RenderGlyphAsBitmap(font, c, pen, px);
-                var pos = new Point(point.X + (int)offX, point.Y + g.offY);
-                cv.DrawImageAlpha(g.bmp, pos.X, pos.Y);
+                cv.DrawImageAlpha(g.bmp, point.X + (int)offX, point.Y + g.offY);
                 offX += g.offX;
             }
         }
@@ -151,16 +146,22 @@ if (aValue < 0)
                ///if (debug) dbg.Send(((ushort)c).ToString());
                 
                 GlyphResult g = RenderGlyphAsBitmap(font, c, pen, px);
-                var pos = new Point(point.X + (int)offX, point.Y + offY + g.offY);
-                cv.DrawImageAlpha(g.bmp, pos.X, pos.Y);
+                cv.DrawImageAlpha(g.bmp, point.X + (int)offX, point.Y + offY + g.offY);
                 offX += g.offX;
             }
         }
 
         public static int GetTTFWidth(this string text, string font, float px) {
-            if (!fonts.TryGetValue(font, out Font f)) {
-                throw new Exception("Font is not registered");
+            Font f = null;
+
+            foreach (var fontName in fonts.Keys) {
+                if (fontName == font) {
+                    f = fonts[fontName];
+                    break;
+                }
             }
+
+            if (f == null) throw new Exception("Font not found!");
 
             float scale = f.ScaleInPixels(px);
             int totalWidth = 0;
@@ -180,7 +181,27 @@ if (aValue < 0)
         }
 
         #region MacroDummies
-        public static void NumberToString(int aValue, string xResult, string[] xChars) { }
+        public static void NumberToString(int aValue, string xResult, string[] xChars) {
+            if (aValue == 0) { // macro dummies are also useful for getting syntax highlighting in vs2022, but remember that this body will never be used
+                xResult = "0";
+            } else {
+                int xValue = aValue;
+
+                if (aValue < 0) {
+                    xValue *= -1;
+                }
+
+                while (xValue > 0) {
+                    int xValue2 = xValue % 10;
+                    xResult = string.Concat(xChars[xValue2], xResult);
+                    xValue /= 10;
+                }
+            }
+
+            if (aValue < 0) {
+                xResult = string.Concat("-", xResult);
+            }
+        }
         #endregion
     }
 
