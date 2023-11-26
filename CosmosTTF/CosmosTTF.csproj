@@ -4,19 +4,10 @@
     <TargetFramework>net6.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <RunPostBuildEvent>Always</RunPostBuildEvent>
   </PropertyGroup>
 
 	<ItemGroup>
 		<PackageReference Include="Cosmos.Debug.Kernel" Version="0-*" NoWarn="NU1604" />
 		<PackageReference Include="Cosmos.System2" Version="0-*" NoWarn="NU1604" />
 	</ItemGroup>
-
-	<Target Name="PreBuild" BeforeTargets="PreBuildEvent">
-	  <Exec Command="CosmosMacros $(ProjectDir) apply" />
-	</Target>
-
-	<Target Name="PostBuild" AfterTargets="PostBuildEvent">
-	  <Exec Command="CosmosMacros $(ProjectDir) restore" />
-	</Target>
 </Project>
