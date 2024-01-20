@@ -3,6 +3,8 @@ using Cosmos.System.Graphics;
 using CosmosTTF;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Linq;
 using System.Reflection;
 using System.Text;
 
@@ -79,9 +81,10 @@ namespace LunarLabs.Fonts {
     }
 
     public class Font {
-        public Debugger debugger = new("System", "TTF");
+        public Cosmos.Debug.Kernel.Debugger debugger = new("System");
         private int _glyphCount;
         private byte[] _data;              // pointer to .ttf file
+        private string _name;
 
         private uint _loca;
         private uint _head;
@@ -111,8 +114,9 @@ namespace LunarLabs.Fonts {
         private const byte VLINE = 2;
         private const byte VCURVE = 3;
 
-        public Font(byte[] bytes) {
+        public Font(byte[] bytes, string name = "") {
             _data = bytes;
+            _name = name;
 
             var cmap = FindTable("cmap");
             _loca = FindTable("loca");
@@ -915,7 +919,7 @@ namespace LunarLabs.Fonts {
 
         private void Rasterize(Bitmap bitmap, float flatnessInPixels, List<Vertex> vertices, float scaleX, float scaleY, float shiftX, float shiftY, int XOff, int YOff, bool Invert, int rgbOffset) {
             float scale = scaleX < scaleY ? scaleX : scaleY;
-            //debugger.Send("Rasterize: Log Point 1");
+            Debug.WriteLine("Rasterize " + _name + ": " + string.Join(" ", vertices.Select((vert) => $"({vert.x},{vert.y};{vert.cx},{vert.cy})")));
             int[] windingLengths;
             List<Point> windings;
             //debugger.Send("Rasterize: Log Point 2");
@@ -1170,7 +1174,7 @@ namespace LunarLabs.Fonts {
                         //debugger.Send("RasterizeSortedEdges: Log Point 5");
                         int ofs = (int)(iii + j * bitmap.Width);
                         //debugger.Send(ofs.ToString());
-                        bitmap.rawData[ofs] = ((int)scanline[iii] << 24) + rgbOffset;
+                        bitmap.RawData[ofs] = ((int)scanline[iii] << 24) + rgbOffset;
                         //debugger.Send("RasterizeSortedEdges: Log Point 6");
                     }
 

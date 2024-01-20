@@ -14,13 +14,13 @@ namespace CosmosTTF {
         private static Dictionary<string, GlyphResult> glyphCache = new();
         private static List<string> glyphCacheKeys = new();
 
-        private static Debugger dbg = new("System", "TTFManager");
+        private static Debugger dbg = new("System");
 
         public static int GlyphCacheSize { get; set; } = 512;
         private static Canvas prevCanv;
 
         public static void RegisterFont(string name, byte[] byteArray) {
-            fonts.Add(name, new Font(byteArray));
+            fonts.Add(name, new Font(byteArray, name));
         }
 
         /// <summary>
