@@ -86,15 +86,20 @@ namespace CosmosTTF {
         /// <summary>
         /// Gets a glyphs horizontal metrics
         /// </summary>
-        public static void GetGlyphHMetrics(string font, char c, out int advWidth, out int lsb) {
+        public static void GetGlyphHMetrics(string font, char c, int px, out int advWidth, out int lsb) {
             advWidth = 0;
             lsb = 0;
+
 
             if (!fonts.TryGetValue(font, out Font f)) {
                 throw new Exception("Font is not registered");
             }
 
+            float scale = f.ScaleInPixels(px);
+
             f.GetCodepointHMetrics(c, out advWidth, out lsb);
+            advWidth = (int)(advWidth * scale);
+            lsb = (int)(lsb * scale);
         }
         
         /// <summary>
