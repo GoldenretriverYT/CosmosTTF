@@ -919,7 +919,7 @@ namespace LunarLabs.Fonts {
 
         private void Rasterize(Bitmap bitmap, float flatnessInPixels, List<Vertex> vertices, float scaleX, float scaleY, float shiftX, float shiftY, int XOff, int YOff, bool Invert, int rgbOffset) {
             float scale = scaleX < scaleY ? scaleX : scaleY;
-            Debug.WriteLine("Rasterize " + _name + ": " + string.Join(" ", vertices.Select((vert) => $"({vert.x},{vert.y};{vert.cx},{vert.cy})")));
+            //Debug.WriteLine("Rasterize " + _name + ": " + string.Join(" ", vertices.Select((vert) => $"({vert.x},{vert.y};{vert.cx},{vert.cy})")));
             int[] windingLengths;
             List<Point> windings;
             //debugger.Send("Rasterize: Log Point 2");
