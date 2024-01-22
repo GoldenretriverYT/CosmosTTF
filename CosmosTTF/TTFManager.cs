@@ -82,6 +82,20 @@ namespace CosmosTTF {
                 offX += g.offX;
             }
         }
+
+        /// <summary>
+        /// Gets a glyphs horizontal metrics
+        /// </summary>
+        public static void GetGlyphHMetrics(string font, char c, out int advWidth, out int lsb) {
+            advWidth = 0;
+            lsb = 0;
+
+            if (!fonts.TryGetValue(font, out Font f)) {
+                throw new Exception("Font is not registered");
+            }
+
+            f.GetCodepointHMetrics(c, out advWidth, out lsb);
+        }
         
         /// <summary>
         /// Draws a string using the registered TTF font provided under the font parameter. Alpha in pen color will be ignored. This method is the checked variant, which will check for boundary exceeds (using maxWidth and maxHeight) and it will also check the validity of characters.
