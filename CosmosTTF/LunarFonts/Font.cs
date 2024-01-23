@@ -1007,8 +1007,9 @@ namespace LunarLabs.Fonts {
 
             //debugger.Send("Rasterize: Log Point 15");
 
-            var temp = new Edge();
-            temp.y0 = 10000000;
+            var temp = new Edge {
+                y0 = 10000000
+            };
             edgeList.Add(temp);
 
             //debugger.Send("Rasterize: Log Point 16");
