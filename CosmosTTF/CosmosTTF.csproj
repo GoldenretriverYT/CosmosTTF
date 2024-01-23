@@ -4,7 +4,27 @@
     <TargetFramework>net6.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+    <Title>CosmosTTF</Title>
+    <Authors>GoldenretriverYT, Relfos</Authors>
+    <Description>TTF for Cosmos using a modified version of LunarFonts (by Relfos)</Description>
+    <Company>-</Company>
+    <PackageProjectUrl>https://github.com/GoldenretriverYT/CosmosTTF</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/GoldenretriverYT/CosmosTTF</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageTags>ttf; cosmos</PackageTags>
   </PropertyGroup>
+
+  <PropertyGroup>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <AssemblyVersion>2.0.0</AssemblyVersion>
+    <FileVersion>2.0.0</FileVersion>
+    <Version>2.0.0</Version>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="../README.md" Pack="true" PackagePath="/" />
+  </ItemGroup>
 
 	<ItemGroup>
 		<PackageReference Include="Cosmos.Debug.Kernel" Version="0-*" NoWarn="NU1604" />
