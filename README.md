@@ -24,6 +24,10 @@ Now, what if you arent using CGS (or atleast arent using it directly)? Well, you
 
 You can measure the width of a string using the `TTFManager.GetTTFWidth` method. It returns the width of the string in pixels. This width, as of right now, is without the left side bearing (kinda like DrawStringTTF does not respect LSB yet)
 
+## Manual usage
+
+If you prefer to leave TTFManager alone and do something different, you can use the `Font` class in the namespace `LunarLabs.Fonts`.
+
 # Some fonts are not working! How to fix?
 Whilst most TTF fonts work, a few dont. Additionally, italic fonts might look cut off a bit.
 
