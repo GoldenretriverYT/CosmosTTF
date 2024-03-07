@@ -278,14 +278,14 @@ namespace LunarLabs.Fonts {
             return 0;
         }
 
-        private int GetCodepointKernAdvance(char ch1, char ch2) {
+        private int GetCodepointKernAdvance(Rune ch1, Rune ch2) {
             if (_kern <= 0)
                 return 0;
             else
                 return GetGlyphKernAdvance(FindGlyphIndex(ch1), FindGlyphIndex(ch2));
         }
 
-        public void GetCodepointHMetrics(char codepoint, out int advanceWidth, out int leftSideBearing) {
+        public void GetCodepointHMetrics(Rune codepoint, out int advanceWidth, out int leftSideBearing) {
             GetGlyphHMetrics(FindGlyphIndex(codepoint), out advanceWidth, out leftSideBearing);
         }
 
@@ -311,7 +311,7 @@ namespace LunarLabs.Fonts {
             return pixelHeight / fHeight;
         }
 
-        private Bitmap GetCodepointBitmap(float scaleX, float scaleY, char codepoint, int rgbOffset, out int xoff, out int yoff) {
+        private Bitmap GetCodepointBitmap(float scaleX, float scaleY, Rune codepoint, int rgbOffset, out int xoff, out int yoff) {
             //debugger.Send("GetCodepointBitmap - " + codepoint + ": Log Point 1");
             var gidx = FindGlyphIndex(codepoint);
             //debugger.Send("GetCodepointBitmap - " + codepoint + ": Log Point 2");
@@ -342,7 +342,7 @@ namespace LunarLabs.Fonts {
             int w = (ix1 - ix0);
             int h = (iy1 - iy0);
             //debugger.Send("GetGlyphBitmap - " + glyph + ": Log Point 7 " + w + " " + h);
-            
+
             if (w <= 0 || h <= 0) {
                 throw new Exception("invalid glyph size");
             }
@@ -359,124 +359,126 @@ namespace LunarLabs.Fonts {
             return result;
         }
 
-        private ushort FindGlyphIndex(char unicodeCodepoint) {
+        private int FindGlyphIndex(Rune unicodeCodepoint) {
             var format = ReadU16(_indexMap);
 
             switch (format) {
                 // apple byte encoding
                 case 0: {
-                        var bytes = ReadU16(_indexMap + 2);
-                        if (unicodeCodepoint < bytes - 6) {
-                            return _data[_indexMap + 6 + unicodeCodepoint];
-                        } else {
-                            return 0;
-                        }
-                    }
-
-                case 6: {
-                        var first = ReadU16(_indexMap + 6);
-                        var count = ReadU16(_indexMap + 8);
-                        if (unicodeCodepoint >= first && unicodeCodepoint < first + count) {
-                            return ReadU16((uint)(_indexMap + 10 + (unicodeCodepoint - first) * 2));
-                        } else {
-                            return 0;
-                        }
-                    }
-
-                // TODO: high-byte mapping for japanese/chinese/korean
-                case 2: {
+                    var bytes = ReadU16(_indexMap + 2);
+                    if (unicodeCodepoint.Value < bytes - 6) {
+                        return _data[_indexMap + 6 + unicodeCodepoint.Value];
+                    } else {
                         return 0;
                     }
+                }
+
+                case 6: {
+                    var first = ReadU16(_indexMap + 6);
+                    var count = ReadU16(_indexMap + 8);
+                    if (unicodeCodepoint.Value >= first && unicodeCodepoint.Value < first + count) {
+                        return ReadU16((uint)(_indexMap + 10 + (unicodeCodepoint.Value - first) * 2));
+                    } else {
+                        return 0;
+                    }
+                }
 
                 // standard mapping for windows fonts: binary search collection of ranges
                 case 4: {
-                        var segcount = ReadU16(_indexMap + 6) >> 1;
-                        var searchRange = ReadU16(_indexMap + 8) >> 1;
-                        var entrySelector = ReadU16(_indexMap + 10);
-                        var rangeShift = ReadU16(_indexMap + 12) >> 1;
+                    var segcount = ReadU16(_indexMap + 6) >> 1;
+                    var searchRange = ReadU16(_indexMap + 8) >> 1;
+                    var entrySelector = ReadU16(_indexMap + 10);
+                    var rangeShift = ReadU16(_indexMap + 12) >> 1;
 
-                        // do a binary search of the segments
-                        var endCount = _indexMap + 14;
-                        var search = endCount;
+                    // do a binary search of the segments
+                    var endCount = _indexMap + 14;
+                    var search = endCount;
 
-                        if (unicodeCodepoint > 0xFFFF) {
-                            return 0;
-                        }
-
-                        // they lie from endCount .. endCount + segCount
-                        // but searchRange is the nearest power of two, so...
-                        if (unicodeCodepoint >= ReadU16((uint)(search + rangeShift * 2))) {
-                            search = (uint)(search + rangeShift * 2);
-                        }
-
-                        // now decrement to bias correctly to find smallest
-                        search -= 2;
-
-                        while (entrySelector != 0) {
-                            //stbtt_uint16 start, end;
-                            searchRange = searchRange >> 1;
-                            var startValue2 = ReadU16((uint)(search + 2 + segcount * 2 + 2));
-                            var endValue2 = ReadU16(search + 2);
-                            startValue2 = ReadU16((uint)(search + searchRange * 2 + segcount * 2 + 2));
-                            endValue2 = ReadU16((uint)(search + searchRange * 2));
-
-                            if (unicodeCodepoint > endValue2) {
-                                search = (uint)(search + searchRange * 2);
-                            }
-
-                            entrySelector--;
-                        }
-
-
-                        search += 2;
-
-                        var item = (ushort)((search - endCount) >> 1);
-
-                        //STBTT_assert(unicode_codepoint <= ttUSHORT(data + endCount + 2*item));
-                        var startValue = ReadU16((uint)(_indexMap + 14 + segcount * 2 + 2 + 2 * item));
-                        var endValue = ReadU16((uint)(_indexMap + 14 + 2 + 2 * item));
-                        if (unicodeCodepoint < startValue) {
-                            //IntToString(unicode_codepoint); //BOO
-                            return 0;
-                        }
-
-                        var offset = ReadU16((uint)(_indexMap + 14 + segcount * 6 + 2 + 2 * item));
-                        if (offset == 0) {
-                            var n = ReadS16((uint)(_indexMap + 14 + segcount * 4 + 2 + 2 * item));
-                            return (ushort)(unicodeCodepoint + n);
-                        }
-
-                        return ReadU16((uint)(offset + (unicodeCodepoint - startValue) * 2 + _indexMap + 14 + segcount * 6 + 2 + 2 * item));
+                    if (unicodeCodepoint.Value > 0xFFFF) {
+                        return 0;
                     }
 
-                case 12: {
-                        int ngroups = ReadU16(_indexMap + 6);
-                        int low = 0;
-                        int high = ngroups;
+                    // they lie from endCount .. endCount + segCount
+                    // but searchRange is the nearest power of two, so...
+                    if (unicodeCodepoint.Value >= ReadU16((uint)(search + rangeShift * 2))) {
+                        search = (uint)(search + rangeShift * 2);
+                    }
 
-                        // Binary search the right group.
-                        while (low <= high) {
-                            var mid = low + ((high - low) >> 1); // rounds down, so low <= mid < high
-                            var start_char = ReadU32((uint)(_indexMap + 16 + mid * 12));
-                            var end_char = ReadU32((uint)(_indexMap + 16 + mid * 12 + 4));
-                            if (unicodeCodepoint < start_char)
-                                high = mid - 1;
+                    // now decrement to bias correctly to find smallest
+                    search -= 2;
+
+                    while (entrySelector != 0) {
+                        //stbtt_uint16 start, end;
+                        searchRange = searchRange >> 1;
+                        var startValue2 = ReadU16((uint)(search + 2 + segcount * 2 + 2));
+                        var endValue2 = ReadU16(search + 2);
+                        startValue2 = ReadU16((uint)(search + searchRange * 2 + segcount * 2 + 2));
+                        endValue2 = ReadU16((uint)(search + searchRange * 2));
+
+                        if (unicodeCodepoint.Value > endValue2) {
+                            search = (uint)(search + searchRange * 2);
+                        }
+
+                        entrySelector--;
+                    }
+
+
+                    search += 2;
+
+                    var item = (ushort)((search - endCount) >> 1);
+
+                    //STBTT_assert(unicode_codepoint <= ttUSHORT(data + endCount + 2*item));
+                    var startValue = ReadU16((uint)(_indexMap + 14 + segcount * 2 + 2 + 2 * item));
+                    var endValue = ReadU16((uint)(_indexMap + 14 + 2 + 2 * item));
+                    if (unicodeCodepoint.Value < startValue) {
+                        //IntToString(unicode_codepoint); //BOO
+                        return 0;
+                    }
+
+                    var offset = ReadU16((uint)(_indexMap + 14 + segcount * 6 + 2 + 2 * item));
+                    if (offset == 0) {
+                        var n = ReadS16((uint)(_indexMap + 14 + segcount * 4 + 2 + 2 * item));
+                        return (ushort)(unicodeCodepoint.Value + n);
+                    }
+
+                    return ReadU16((uint)(offset + (unicodeCodepoint.Value - startValue) * 2 + _indexMap + 14 + segcount * 6 + 2 + 2 * item));
+                }
+
+                case 12:
+                case 13: {
+                    int ngroups = (int)ReadU32(_indexMap + 12);
+                    Debug.WriteLine("12 ngroups : " + ngroups);
+                    int low = 0;
+                    int high = ngroups;
+
+                    // Binary search the right group.
+                    while (low < high) {
+                        var mid = low + ((high - low) >> 1); // rounds down, so low <= mid < high
+                        var start_char = ReadU32((uint)(_indexMap + 16 + mid * 12));
+                        var end_char = ReadU32((uint)((_indexMap + 16) + (mid * 12 + 4)));
+                        Debug.WriteLine(start_char + " " + end_char);
+                        if (unicodeCodepoint.Value < start_char)
+                            high = mid;
+                        else if (unicodeCodepoint.Value > end_char)
+                            low = mid + 1;
+                        else {
+                            uint start_glyph = ReadU32((uint)(_indexMap + 16 + mid * 12 + 8));
+                            if (format == 12)
+                                return ((int)(start_glyph + unicodeCodepoint.Value - start_char));
                             else
-                            if (unicodeCodepoint > end_char)
-                                low = mid + 1;
-                            else {
-                                uint start_glyph = ReadU32((uint)(_indexMap + 16 + mid * 12 + 8));
-                                return (ushort)(start_glyph + unicodeCodepoint - start_char);
-                            }
+                                return (int)start_glyph;
                         }
-
-                        return 0; // not found
                     }
+
+                    Debug.WriteLine("TODO: Couldn't find codepoint in range in format 12 cmap");
+                    return 0; // not found
+                }
 
                 // TODO
                 default: {
-                        return 0;
-                    }
+                    Debug.WriteLine("TODO: Unknown cmap format " + format);
+                    return 0;
+                }
             }
         }
 
@@ -523,7 +525,7 @@ namespace LunarLabs.Fonts {
             return true;
         }
 
-        private bool GetCodepointBox(char codepoint, out int x0, out int y0, out int x1, out int y1) {
+        private bool GetCodepointBox(Rune codepoint, out int x0, out int y0, out int x1, out int y1) {
             return GetGlyphBox(FindGlyphIndex(codepoint), out x0, out y0, out x1, out y1);
         }
 
@@ -873,43 +875,43 @@ namespace LunarLabs.Fonts {
                 for (int i = 0; i < vertices.Count; i++) {
                     switch (vertices[i].vertexType) {
                         case VMOVE: {
-                                // start the next contour
-                                if (n >= 0) {
-                                    contours[n] = numPoints - start;
-                                }
-                                n++;
-                                start = numPoints;
-
-                                x = vertices[i].x;
-                                y = vertices[i].y;
-                                if (windings != null) {
-                                    windings.Add(new Point(x, y));
-                                }
-                                numPoints++;
-                                break;
+                            // start the next contour
+                            if (n >= 0) {
+                                contours[n] = numPoints - start;
                             }
+                            n++;
+                            start = numPoints;
+
+                            x = vertices[i].x;
+                            y = vertices[i].y;
+                            if (windings != null) {
+                                windings.Add(new Point(x, y));
+                            }
+                            numPoints++;
+                            break;
+                        }
 
                         case VLINE: {
-                                x = vertices[i].x;
-                                y = vertices[i].y;
+                            x = vertices[i].x;
+                            y = vertices[i].y;
 
-                                if (windings != null) {
-                                    windings.Add(new Point(x, y));
-                                }
-
-                                numPoints++;
-                                break;
+                            if (windings != null) {
+                                windings.Add(new Point(x, y));
                             }
+
+                            numPoints++;
+                            break;
+                        }
 
                         case VCURVE: {
-                                TesselateCurve(windings, ref numPoints, x, y,
-                                                         vertices[i].cx, vertices[i].cy,
-                                                         vertices[i].x, vertices[i].y,
-                                                         objspace_flatness_squared, 0);
-                                x = vertices[i].x;
-                                y = vertices[i].y;
-                                break;
-                            }
+                            TesselateCurve(windings, ref numPoints, x, y,
+                                                     vertices[i].cx, vertices[i].cy,
+                                                     vertices[i].x, vertices[i].y,
+                                                     objspace_flatness_squared, 0);
+                            x = vertices[i].x;
+                            y = vertices[i].y;
+                            break;
+                        }
                     }
                 }
 
@@ -994,7 +996,7 @@ namespace LunarLabs.Fonts {
 
             //debugger.Send("Rasterize: Log Point 13");
             int idx = 0;
-            foreach(Edge edge in edgeList) {
+            foreach (Edge edge in edgeList) {
                 keys[idx] = (int)edge.y0;
                 idx++;
             }
@@ -1002,7 +1004,7 @@ namespace LunarLabs.Fonts {
             //debugger.Send("Rasterize: Log Point 14");
 
             Edge[] edgeArray = edgeList.ToArray();
-            Sort(edgeArray, 0, edgeArray.Length-1);
+            Sort(edgeArray, 0, edgeArray.Length - 1);
             edgeList = new List<Edge>(edgeArray);
 
             //debugger.Send("Rasterize: Log Point 15");
@@ -1236,19 +1238,20 @@ namespace LunarLabs.Fonts {
             }
         }
 
-        public int GetKerning(char current, char next, float scale) {
+        public int GetKerning(Rune current, Rune next, float scale) {
             return (int)Math.Floor(GetCodepointKernAdvance(current, next) * scale);
         }
 
-        public bool HasGlyph(char ID) {
+        public bool HasGlyph(Rune ID) {
             var P = FindGlyphIndex(ID);
             return (P > 0);
         }
 
-        public FontGlyph RenderGlyph(char ID, float scale, int rgbOffset) {
+        public FontGlyph RenderGlyph(Rune ID, float scale, int rgbOffset) {
             //debugger.Send("FontRenderGlyph - " + ID + ": Log Point 1");
             if (!HasGlyph(ID)) {
                 //debugger.Send("FontRenderGlyph - " + ID + ": Log Point 2");
+                //return RenderGlyph('?', scale, rgbOffset);
                 return null;
             }
 
@@ -1261,9 +1264,9 @@ namespace LunarLabs.Fonts {
 
             //debugger.Send("FontRenderGlyph - " + ID + ": Log Point 5");
 
-            if (ID == ' ') {
+            if ((char)ID.Value == ' ') {
                 //debugger.Send("FontRenderGlyph - " + ID + ": Log Point 6");
-                ID = '_';
+                ID = new Rune('_');
                 //debugger.Send("FontRenderGlyph - " + ID + ": Log Point 7");
                 GetCodepointBitmap(scale, scale, ID, rgbOffset, out xOfs, out yOfs);
                 //debugger.Send("FontRenderGlyph - " + ID + ": Log Point 8");
@@ -1273,15 +1276,15 @@ namespace LunarLabs.Fonts {
                 //debugger.Send("FontRenderGlyph - " + ID + ": Log Point 10");
                 if (!HasGlyph(ID)) {
                     //debugger.Send("FontRenderGlyph - " + ID + ": Log Point 11");
-                    if (char.IsLetter(ID)) {
+                    if (Rune.IsLetter(ID)) {
                         //debugger.Send("FontRenderGlyph - " + ID + ": Log Point 12");
-                        if (char.IsUpper(ID)) {
+                        if (Rune.IsUpper(ID)) {
                             //debugger.Send("FontRenderGlyph - " + ID + ": Log Point 13");
-                            ID = char.ToLowerInvariant(ID);
+                            ID = Rune.ToLowerInvariant(ID);
                             //debugger.Send("FontRenderGlyph - " + ID + ": Log Point 14");
                         } else {
                             //debugger.Send("FontRenderGlyph - " + ID + ": Log Point 17");
-                            ID = char.ToUpperInvariant(ID);
+                            ID = Rune.ToUpperInvariant(ID);
                             //debugger.Send("FontRenderGlyph - " + ID + ": Log Point 15");
                         }
                     }

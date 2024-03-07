@@ -7,6 +7,7 @@ using System.Drawing;
 using Point = System.Drawing.Point;
 using Cosmos.Debug.Kernel;
 using Cosmos.System;
+using System.Text;
 
 namespace CosmosTTF {
     public static class TTFManager {
@@ -32,7 +33,7 @@ namespace CosmosTTF {
         /// <param name="scalePx">The scale in pixels</param>
         /// <returns></returns>
         /// <exception cref="Exception"></exception>
-        public static GlyphResult RenderGlyphAsBitmap(string font, char glyph, Color color, float scalePx = 16) {
+        public static GlyphResult RenderGlyphAsBitmap(string font, Rune glyph, Color color, float scalePx = 16) {
             var rgbOffset = ((color.R & 0xFF) << 16) + ((color.G & 0xFF) << 8) + color.B;
             var glyphCacheKey = font + glyph + scalePx + rgbOffset.ToString();
 
@@ -47,6 +48,11 @@ namespace CosmosTTF {
 
             float scale = f.ScaleInPixels(scalePx);
             var glyphRendered = f.RenderGlyph(glyph, scale, rgbOffset);
+
+            if(glyphRendered == null) {
+                throw new Exception("Glyph " + glyph.Value + " was not found in font");
+            }
+
             var image = glyphRendered.Image;
 
             /* Todo: Maybe use Cosmos Bitmap directly in LunarFonts.Font? */
@@ -74,7 +80,7 @@ namespace CosmosTTF {
             float offX = 0;
             GlyphResult g;
 
-            foreach (char c in text)
+            foreach (Rune c in text.EnumerateRunes())
             {
                 g = RenderGlyphAsBitmap(font, c, pen, px);
                 var pos = new Point(point.X + (int)offX, point.Y + g.offY);
@@ -86,7 +92,7 @@ namespace CosmosTTF {
         /// <summary>
         /// Gets a glyphs horizontal metrics
         /// </summary>
-        public static void GetGlyphHMetrics(string font, char c, int px, out int advWidth, out int lsb) {
+        public static void GetGlyphHMetrics(string font, Rune c, int px, out int advWidth, out int lsb) {
             advWidth = 0;
             lsb = 0;
 
@@ -111,8 +117,8 @@ namespace CosmosTTF {
             float offX = 0;
             int offY = 0;
 
-            foreach (char c in text) {
-                if(c == '\n') {
+            foreach (Rune c in text.EnumerateRunes()) {
+                if(c.Value == '\n') {
                     offY += px;
                     offX = 0;
                     if (offY > maxHeight-px) return;
@@ -120,7 +126,7 @@ namespace CosmosTTF {
                     continue;
                 }
 
-                if ((c < 32 || (c >= 127 && c < 160)))
+                if ((c.Value < 32 || (c.Value >= 127 && c.Value < 160)))
                 {
                     continue; // rendering control characters would crash!
                 }
@@ -150,7 +156,7 @@ namespace CosmosTTF {
             float scale = f.ScaleInPixels(px);
             int totalWidth = 0;
 
-            foreach(char c in text) {
+            foreach(Rune c in text.EnumerateRunes()) {
                 f.GetCodepointHMetrics(c, out int advWidth, out int lsb);
                 totalWidth += advWidth;
             }
