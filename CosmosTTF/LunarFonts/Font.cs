@@ -447,7 +447,7 @@ namespace LunarLabs.Fonts {
                 case 12:
                 case 13: {
                     int ngroups = (int)ReadU32(_indexMap + 12);
-                    Debug.WriteLine("12 ngroups : " + ngroups);
+                    //Debug.WriteLine("12 ngroups : " + ngroups);
                     int low = 0;
                     int high = ngroups;
 
@@ -456,7 +456,7 @@ namespace LunarLabs.Fonts {
                         var mid = low + ((high - low) >> 1); // rounds down, so low <= mid < high
                         var start_char = ReadU32((uint)(_indexMap + 16 + mid * 12));
                         var end_char = ReadU32((uint)((_indexMap + 16) + (mid * 12 + 4)));
-                        Debug.WriteLine(start_char + " " + end_char);
+                        //Debug.WriteLine(start_char + " " + end_char);
                         if (unicodeCodepoint.Value < start_char)
                             high = mid;
                         else if (unicodeCodepoint.Value > end_char)
@@ -470,13 +470,13 @@ namespace LunarLabs.Fonts {
                         }
                     }
 
-                    Debug.WriteLine("TODO: Couldn't find codepoint in range in format 12 cmap");
+                    //Debug.WriteLine("TODO: Couldn't find codepoint in range in format 12 cmap");
                     return 0; // not found
                 }
 
                 // TODO
                 default: {
-                    Debug.WriteLine("TODO: Unknown cmap format " + format);
+                    //Debug.WriteLine("TODO: Unknown cmap format " + format);
                     return 0;
                 }
             }
