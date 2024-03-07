@@ -50,7 +50,12 @@ namespace CosmosTTF {
             var glyphRendered = f.RenderGlyph(glyph, scale, rgbOffset);
 
             if(glyphRendered == null) {
-                throw new Exception("Glyph " + glyph.Value + " was not found in font");
+                if(!fonts.TryGetValue("__fallback__", out var fallback))
+                    throw new Exception("Glyph " + glyph.Value + " was not found in font");
+
+                glyphRendered = fallback.RenderGlyph(glyph, scale, rgbOffset);
+
+                if(glyphRendered == null) throw new Exception("Glyph " + glyph.Value + " was not found in fallback font!");
             }
 
             var image = glyphRendered.Image;
