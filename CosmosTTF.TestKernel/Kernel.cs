@@ -12,8 +12,10 @@ using Sys = Cosmos.System;
 
 namespace CosmosTTF.TestKernel {
     public class Kernel : Sys.Kernel {
-        public Canvas canvas;
-        public TTFFont noto;
+        private Canvas canvas;
+        private CGSSurface surface;
+
+        private TTFFont noto;
 
         private int frames = 0;
         private int framesThisSecond = 0;
@@ -23,12 +25,14 @@ namespace CosmosTTF.TestKernel {
             VFSManager.RegisterVFS(new CosmosVFS());
 
             canvas = FullScreenCanvas.GetFullScreenCanvas();
-            noto = new TTFFont(File.ReadAllBytes(@"1:\noto.ttf")); 
+            surface = new CGSSurface(canvas);
+
+            noto = new TTFFont(File.ReadAllBytes(@"1:\noto.ttf"));
         }
 
         protected override void Run() { 
             canvas.Clear();
-            noto.DrawToSurface(new CGSSurface(canvas), 48, 100, 100, "Hello World, we have " + framesThisSecond + " FPS!", Color.White);
+            noto.DrawToSurface(surface, 48, 100, 100, "Hello World, we have " + framesThisSecond + " FPS!", Color.White);
             canvas.Display();
             frames++;
 
