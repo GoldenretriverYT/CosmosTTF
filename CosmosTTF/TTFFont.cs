@@ -12,6 +12,12 @@ using System.Text;
 namespace CosmosTTF {
     public class TTFFont {
         private Font font;
+        private Debugger debugger = new("TTFFont");
+        
+        // Dictionary<color, Dictionary<scale, Dictionary<glyph, GlyphResult>>>
+        private Dictionary<int,
+                    Dictionary<int,
+                        Dictionary<int, GlyphResult>>> cache = new Dictionary<int, Dictionary<int, Dictionary<int, GlyphResult>>>();
 
         public TTFFont(byte[] data) {
             font = new Font(data);
@@ -26,9 +32,30 @@ namespace CosmosTTF {
         /// <param name="scalePx">The scale in pixels</param>
         /// <returns></returns>
         /// <exception cref="Exception"></exception>
-        public GlyphResult? RenderGlyphAsBitmap(Rune glyph, Color color, float scalePx = 16) {
-            var rgbOffset = ((color.R & 0xFF) << 16) + ((color.G & 0xFF) << 8) + color.B;
+        public GlyphResult? RenderGlyphAsBitmap(Rune glyph, Color color, int scalePx) {
+            int argbColor = color.ToArgb();
+            int runeValue = glyph.Value;
 
+            Dictionary<int, Dictionary<int, GlyphResult>> colorCache;
+            Dictionary<int, GlyphResult> scaleCache;
+
+            if (cache.TryGetValue(argbColor, out colorCache)) {
+                if (colorCache.TryGetValue(scalePx, out scaleCache)) {
+                    if (scaleCache.TryGetValue(runeValue, out var foundGlyph)) {
+                        return foundGlyph;
+                    }
+                } else {
+                    colorCache[scalePx] = new Dictionary<int, GlyphResult>();
+                }
+            } else {
+                cache[argbColor] = new Dictionary<int, Dictionary<int, GlyphResult>>();
+                colorCache = cache[argbColor];
+
+                cache[argbColor][scalePx] = new Dictionary<int, GlyphResult>();
+                scaleCache = cache[argbColor][scalePx];
+            }
+
+            var rgbOffset = ((color.R & 0xFF) << 16) + ((color.G & 0xFF) << 8) + color.B;
 
             float scale = font.ScaleInPixels(scalePx);
             var glyphRendered = font.RenderGlyph(glyph, scale, rgbOffset);
@@ -38,8 +65,10 @@ namespace CosmosTTF {
             }
 
             var image = glyphRendered.Image;
+            var result = new GlyphResult(image, glyphRendered.xAdvance, glyphRendered.yOfs);
 
-            return new(image, glyphRendered.xAdvance, glyphRendered.yOfs);
+            scaleCache[runeValue] = result;
+            return result;
         }
 
         /// <summary>
@@ -89,20 +118,21 @@ namespace CosmosTTF {
 
         public void DrawToSurface(ITTFSurface surface, int px, int x, int y, string text, Color color) {
             int offX = 0;
-            GlyphResult? g;
+            GlyphResult g;
 
             Rune prevRune = new Rune('\0');
 
             foreach (Rune c in text.EnumerateRunes()) {
-                g = RenderGlyphAsBitmap(c, color, px);
+                var gMaybe = RenderGlyphAsBitmap(c, color, px);
+                if(!gMaybe.HasValue) continue;
 
-                if(!g.HasValue) continue;
+                g = gMaybe.Value;
 
                 GetGlyphHMetrics(c, px, out int advWidth, out int lsb);
                 GetKerning(prevRune, c, px, out int kerning);
 
                 offX += lsb + kerning;
-                surface.DrawBitmap(g.Value.bmp, offX, g.Value.offY);
+                surface.DrawBitmap(g.bmp, x + offX, y + g.offY);
 
                 if (kerning > 0)
                     offX -= lsb;
@@ -118,6 +148,8 @@ namespace CosmosTTF {
         public Bitmap bmp;
         public int offY = 0;
         public int offX = 0;
+
+        public int hashCode = 0;
 
         public GlyphResult(Bitmap bmp, int offX, int offY) {
             this.bmp = bmp;
@@ -138,7 +170,7 @@ namespace CosmosTTF {
         }
 
         public void DrawBitmap(Bitmap bmp, int x, int y) {
-            canvas.DrawImage(bmp, x, y);
+            canvas.DrawImageAlpha(bmp, x, y);
         }
     }
 }

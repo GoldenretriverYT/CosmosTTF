@@ -10,13 +10,10 @@ namespace WinFormTest {
         }
 
         private void Form1_Load(object sender, EventArgs e) {
-            TTFManager.RegisterFont("arial", File.ReadAllBytes("arial.ttf"));
-
-            TryFont(pictureBox1, "arial", "Hello World! AV", false);
-            TryFont(pictureBox2, "arial", "Hello World! AV", true);
+            TryFont(pictureBox1, new TTFFont(File.ReadAllBytes("arial.ttf")), "Hello World! AV", false);
         }
 
-        public void TryFont(PictureBox pb, string font, string text, bool kerningEnabled) {
+        public void TryFont(PictureBox pb, TTFFont font, string text, bool kerningEnabled) {
             Bitmap finalBmp = new Bitmap(800, 800);
             Graphics bmpG = Graphics.FromImage(finalBmp);
 
@@ -25,14 +22,14 @@ namespace WinFormTest {
             Rune? cPrev = null;
 
             foreach (Rune c in text.EnumerateRunes()) {
-                GlyphResult? g = TTFManager.RenderGlyphAsBitmap(font, c, Color.Black, 64);
+                GlyphResult? g = font.RenderGlyphAsBitmap(c, Color.White, 64);
                 if (!g.HasValue) continue;
 
-                TTFManager.GetGlyphHMetrics(font, c, 64, out int advWidth, out int lsb);
+                font.GetGlyphHMetrics(c, 64, out int advWidth, out int lsb);
 
                 int kerning = 0;
                 if (cPrev.HasValue && kerningEnabled) {
-                    TTFManager.GetKerning(font, cPrev.Value, c, 64, out kerning);
+                    font.GetKerning(cPrev.Value, c, 64, out kerning);
                     Debug.WriteLine($"Kerning: {kerning} between {cPrev} and {c}");
                     offX += kerning;
                 }

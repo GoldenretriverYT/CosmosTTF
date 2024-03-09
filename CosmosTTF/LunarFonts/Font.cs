@@ -1177,7 +1177,7 @@ namespace LunarLabs.Fonts {
                         //debugger.Send("RasterizeSortedEdges: Log Point 5");
                         int ofs = (int)(iii + j * bitmap.Width);
                         //debugger.Send(ofs.ToString());
-                        bitmap.RawData[ofs] = ((int)scanline[iii] << 24) + rgbOffset;
+                        bitmap.RawData[ofs] = (scanline[iii] << 24) + rgbOffset;
                         //debugger.Send("RasterizeSortedEdges: Log Point 6");
                     }
 
