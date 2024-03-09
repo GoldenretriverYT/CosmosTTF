@@ -46,6 +46,7 @@ namespace CosmosTTF {
                     }
                 } else {
                     colorCache[scalePx] = new Dictionary<int, GlyphResult>();
+                    scaleCache = colorCache[scalePx];
                 }
             } else {
                 cache[argbColor] = new Dictionary<int, Dictionary<int, GlyphResult>>();

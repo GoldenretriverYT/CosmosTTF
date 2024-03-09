@@ -30,9 +30,11 @@ namespace CosmosTTF.TestKernel {
             noto = new TTFFont(File.ReadAllBytes(@"1:\noto.ttf"));
         }
 
-        protected override void Run() { 
+        protected override void Run() {
             canvas.Clear();
             noto.DrawToSurface(surface, 48, 100, 100, "Hello World, we have " + framesThisSecond + " FPS!", Color.White);
+            noto.DrawToSurface(surface, 24, 200, 200, "Hello World, we have " + framesThisSecond + " FPS!", Color.White);
+
             canvas.Display();
             frames++;
 
