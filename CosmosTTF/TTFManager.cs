@@ -102,6 +102,18 @@ namespace CosmosTTF {
 
             return true;
         }
+
+        public static bool GetKerning(string font, Rune left, Rune right, int px, out int kerning) {
+            kerning = 0;
+
+            if (!fonts.TryGetValue(font, out Font f)) {
+                throw new Exception("Font is not registered");
+            }
+
+            float scale = f.ScaleInPixels(px);
+            kerning = f.GetKerning(left, right, scale);
+            return true;
+        }
         
         /// <summary>
         /// Draws a string using the registered TTF font provided under the font parameter. Alpha in pen color will be ignored. This method is the checked variant, which will check for boundary exceeds (using maxWidth and maxHeight) and it will also check the validity of characters.
