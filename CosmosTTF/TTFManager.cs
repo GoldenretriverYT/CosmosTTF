@@ -12,12 +12,9 @@ using System.Text;
 namespace CosmosTTF {
     public static class TTFManager {
         private static Dictionary<string, Font> fonts = new();
-        private static Dictionary<string, GlyphResult> glyphCache = new();
-        private static List<string> glyphCacheKeys = new();
 
         private static Debugger dbg = new("System");
 
-        public static int GlyphCacheSize { get; set; } = 512;
         private static Canvas prevCanv;
 
         public static void RegisterFont(string name, byte[] byteArray) {
@@ -33,14 +30,8 @@ namespace CosmosTTF {
         /// <param name="scalePx">The scale in pixels</param>
         /// <returns></returns>
         /// <exception cref="Exception"></exception>
-        public static GlyphResult RenderGlyphAsBitmap(string font, Rune glyph, Color color, float scalePx = 16) {
+        public static GlyphResult? RenderGlyphAsBitmap(string font, Rune glyph, Color color, float scalePx = 16) {
             var rgbOffset = ((color.R & 0xFF) << 16) + ((color.G & 0xFF) << 8) + color.B;
-            var glyphCacheKey = font + glyph + scalePx + rgbOffset.ToString();
-
-            if (glyphCache.TryGetValue(glyphCacheKey, out GlyphResult cached))
-            {
-                return cached;
-            }
 
             if (!fonts.TryGetValue(font, out Font f)) {
                 throw new Exception("Font is not registered");
@@ -50,12 +41,7 @@ namespace CosmosTTF {
             var glyphRendered = f.RenderGlyph(glyph, scale, rgbOffset);
 
             if(glyphRendered == null) {
-                if(!fonts.TryGetValue("__fallback__", out var fallback))
-                    throw new Exception("Glyph " + glyph.Value + " was not found in font");
-
-                glyphRendered = fallback.RenderGlyph(glyph, scale, rgbOffset);
-
-                if(glyphRendered == null) throw new Exception("Glyph " + glyph.Value + " was not found in fallback font!");
+                return null; // throw new Exception("Glyph " + glyph.Value + " was not found!");
             }
 
             var image = glyphRendered.Image;
@@ -70,10 +56,7 @@ namespace CosmosTTF {
                 }
             }*/
 
-            glyphCache[glyphCacheKey] = new(image, glyphRendered.xAdvance, glyphRendered.yOfs);
-            glyphCacheKeys.Add(glyphCacheKey);
-            if (glyphCache.Count > GlyphCacheSize) glyphCache.Remove(glyphCacheKeys[0]); glyphCacheKeys.RemoveAt(0);
-            return glyphCache[glyphCacheKey];
+            return new(image, glyphRendered.xAdvance, glyphRendered.yOfs);
         }
 
         /// <summary>
@@ -83,34 +66,41 @@ namespace CosmosTTF {
         {
             prevCanv = cv;
             float offX = 0;
-            GlyphResult g;
+            GlyphResult? g;
 
             foreach (Rune c in text.EnumerateRunes())
             {
                 g = RenderGlyphAsBitmap(font, c, pen, px);
-                var pos = new Point(point.X + (int)offX, point.Y + g.offY);
-                cv.DrawImageAlpha(g.bmp, pos.X, pos.Y);
-                offX += g.offX;
+                var pos = new Point(point.X + (int)offX, point.Y + g.Value.offY);
+                cv.DrawImageAlpha(g.Value.bmp, pos.X, pos.Y);
+                offX += g.Value.offX;
             }
         }
 
         /// <summary>
         /// Gets a glyphs horizontal metrics
         /// </summary>
-        public static void GetGlyphHMetrics(string font, Rune c, int px, out int advWidth, out int lsb) {
+        public static bool GetGlyphHMetrics(string font, Rune c, int px, out int advWidth, out int lsb) {
             advWidth = 0;
             lsb = 0;
-
 
             if (!fonts.TryGetValue(font, out Font f)) {
                 throw new Exception("Font is not registered");
             }
 
+            int idx = f.FindGlyphIndex(c);
+
+            if(idx == 0) {
+                return false;
+            }
+
             float scale = f.ScaleInPixels(px);
 
-            f.GetCodepointHMetrics(c, out advWidth, out lsb);
+            f.GetGlyphHMetrics(idx, out advWidth, out lsb);
             advWidth = (int)(advWidth * scale);
             lsb = (int)(lsb * scale);
+
+            return true;
         }
         
         /// <summary>
@@ -146,10 +136,10 @@ namespace CosmosTTF {
 
                ///if (debug) dbg.Send(((ushort)c).ToString());
                 
-                GlyphResult g = RenderGlyphAsBitmap(font, c, pen, px);
-                var pos = new Point(point.X + (int)offX, point.Y + offY + g.offY);
-                cv.DrawImageAlpha(g.bmp, pos.X, pos.Y);
-                offX += g.offX;
+                GlyphResult? g = RenderGlyphAsBitmap(font, c, pen, px);
+                var pos = new Point(point.X + (int)offX, point.Y + offY + g.Value.offY);
+                cv.DrawImageAlpha(g.Value.bmp, pos.X, pos.Y);
+                offX += g.Value.offX;
             }
         }
 

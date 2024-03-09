@@ -359,7 +359,7 @@ namespace LunarLabs.Fonts {
             return result;
         }
 
-        private int FindGlyphIndex(Rune unicodeCodepoint) {
+        public int FindGlyphIndex(Rune unicodeCodepoint) {
             var format = ReadU16(_indexMap);
 
             switch (format) {
