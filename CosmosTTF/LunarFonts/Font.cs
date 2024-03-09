@@ -80,7 +80,7 @@ namespace LunarLabs.Fonts {
         public int valid;
     }
 
-    public class Font {
+    internal class Font {
         public Cosmos.Debug.Kernel.Debugger debugger = new("System");
         private int _glyphCount;
         private byte[] _data;              // pointer to .ttf file
